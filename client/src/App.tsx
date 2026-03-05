@@ -1,18 +1,53 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, Redirect, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider, useAuth } from "./hooks/use-auth";
+import { Layout } from "./components/layout";
 import NotFound from "@/pages/not-found";
 
+// Pages
+import Login from "./pages/login";
+import Products from "./pages/products";
+import ProductDetail from "./pages/product-detail";
+import History from "./pages/history";
+
+function ProtectedRoute({ component: Component, ...rest }: { component: any, path: string }) {
+  const { user } = useAuth();
+  
+  if (!user) {
+    return <Redirect to="/" />;
+  }
+
+  return <Component {...rest} />;
+}
+
 function Router() {
+  const { user } = useAuth();
+  const [location] = useLocation();
+
+  // Redirect authenticated users away from login
+  if (user && location === "/") {
+    return <Redirect to="/products" />;
+  }
+
   return (
-    <Switch>
-      {/* Add pages below */}
-      {/* <Route path="/" component={Home}/> */}
-      {/* Fallback to 404 */}
-      <Route component={NotFound} />
-    </Switch>
+    <Layout>
+      <Switch>
+        <Route path="/" component={Login} />
+        <Route path="/products">
+          {() => <ProtectedRoute component={Products} path="/products" />}
+        </Route>
+        <Route path="/products/:id">
+          {() => <ProtectedRoute component={ProductDetail} path="/products/:id" />}
+        </Route>
+        <Route path="/history">
+          {() => <ProtectedRoute component={History} path="/history" />}
+        </Route>
+        <Route component={NotFound} />
+      </Switch>
+    </Layout>
   );
 }
 
@@ -21,7 +56,9 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
-        <Router />
+        <AuthProvider>
+          <Router />
+        </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

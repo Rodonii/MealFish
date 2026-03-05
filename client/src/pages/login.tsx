@@ -39,7 +39,6 @@ export default function Login() {
       {/* Abstract Background Elements */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/20 blur-[100px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-accent/20 blur-[100px] pointer-events-none" />
-
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -52,7 +51,7 @@ export default function Login() {
               <QrCode className="w-8 h-8 transform rotate-6" />
             </div>
             <h1 className="text-3xl font-display font-bold text-foreground tracking-tight">
-              Welcome to <span className="text-gradient">ScanShop</span>
+              Welcome to <span className="text-gradient">Nasukatsu</span>
             </h1>
             <p className="mt-3 text-muted-foreground">
               Scan products, earn points, and unlock rewards.

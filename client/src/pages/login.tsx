@@ -9,23 +9,28 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function Login() {
   const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const { login, isLoggingIn } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username.trim()) {
-      toast({ title: "Please enter a username", variant: "destructive" });
+    if (!username.trim() || !password.trim()) {
+      toast({ title: "Please enter username and password", variant: "destructive" });
       return;
     }
     
     try {
-      await login(username);
+      await login(username, password);
       setLocation("/products");
       toast({ title: "Welcome back!", description: "Successfully logged in." });
-    } catch (error) {
-      toast({ title: "Login failed", description: "Please try again.", variant: "destructive" });
+    } catch (error: any) {
+      toast({ 
+        title: "Login failed", 
+        description: error.message || "Please try again.", 
+        variant: "destructive" 
+      });
     }
   };
 
@@ -62,9 +67,24 @@ export default function Login() {
               <Input
                 id="username"
                 type="text"
-                placeholder="Enter your username to continue"
+                placeholder="Enter your username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
+                className="h-14 px-5 rounded-xl border-2 bg-white focus-visible:ring-primary/20 focus-visible:border-primary text-base transition-all"
+                disabled={isLoggingIn}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="password" className="text-sm font-medium text-foreground ml-1">
+                Password
+              </label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 className="h-14 px-5 rounded-xl border-2 bg-white focus-visible:ring-primary/20 focus-visible:border-primary text-base transition-all"
                 disabled={isLoggingIn}
               />

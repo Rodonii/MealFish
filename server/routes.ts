@@ -20,7 +20,14 @@ export async function registerRoutes(
       let user = await storage.getUserByUsername(input.username);
       
       if (!user) {
-        user = await storage.createUser({ username: input.username });
+        user = await storage.createUser({ 
+          username: input.username,
+          password: input.password // In a real app, hash this!
+        });
+      } else {
+        if (user.password !== input.password) {
+          return res.status(401).json({ message: "Invalid password" });
+        }
       }
       
       res.status(200).json(user);

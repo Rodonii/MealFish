@@ -19,9 +19,10 @@ export const api = {
     login: {
       method: 'POST' as const,
       path: '/api/users/login' as const,
-      input: z.object({ username: z.string() }),
+      input: z.object({ username: z.string(), password: z.string() }),
       responses: {
         200: z.custom<typeof users.$inferSelect>(),
+        401: z.object({ message: z.string() }),
       },
     },
     get: {

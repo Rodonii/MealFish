@@ -12,7 +12,7 @@ export interface LocalUser {
 
 interface AuthContextType {
   user: LocalUser | null;
-  login: (username: string) => Promise<void>;
+  login: (username: string, password: string) => Promise<void>;
   logout: () => void;
   updatePoints: (newTotal: number) => void;
   isLoggingIn: boolean;
@@ -37,21 +37,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const loginMutation = useMutation({
-    mutationFn: async (username: string) => {
+    mutationFn: async ({ username, password }: { username: string; password: string }) => {
       const res = await fetch(api.users.login.path, {
         method: api.users.login.method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username }),
+        body: JSON.stringify({ username, password }),
         credentials: "include",
       });
       
       if (!res.ok) {
-        throw new Error("Failed to login");
+        const err = await res.json();
+        throw new Error(err.message || "Failed to login");
       }
       
       const rawData = await res.json();
-      // Use any to bypass strict z.custom type check if it fails on frontend, 
-      // but we try to validate structure basically
       return rawData as LocalUser; 
     },
     onSuccess: (data) => {
@@ -60,8 +59,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   });
 
-  const login = async (username: string) => {
-    await loginMutation.mutateAsync(username);
+  const login = async (username: string, password: string) => {
+    await loginMutation.mutateAsync({ username, password });
   };
 
   const logout = () => {

@@ -26,7 +26,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <QrCode className="w-5 h-5" />
               </div>
               <span className="font-display font-bold text-xl tracking-tight text-foreground">
-                Scan<span className="text-primary">Shop</span>
+                Scan<span className="text-primary">w</span>
               </span>
             </Link>
 
@@ -70,7 +70,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </header>
-
       {/* Mobile Navigation Bar (Bottom) */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass-card border-t border-b-0 pb-safe">
         <div className="flex justify-around items-center h-16 px-4">
@@ -95,7 +94,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </button>
         </div>
       </div>
-
       <main className="flex-1 flex flex-col pt-8 pb-24 md:pb-8">
         {children}
       </main>

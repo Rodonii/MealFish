@@ -67,7 +67,7 @@ export default function ProductDetail() {
     }
   };
 
-  const pointsToEarn = Math.floor(product.price / 100);
+  const pointsToEarn = Math.floor(product.price / 100) * 5;
   const scanUrl = `${window.location.origin}/products/${product.id}`;
 
   return (

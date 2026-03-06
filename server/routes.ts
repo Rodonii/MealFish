@@ -79,8 +79,8 @@ export async function registerRoutes(
         return res.status(404).json({ message: 'Product not found' });
       }
 
-      // Calculate points (e.g., 1 point per $1 / 100 cents)
-      const pointsEarned = Math.floor(product.price / 100);
+      // Calculate points (e.g., 5 points per 100 units of currency)
+      const pointsEarned = Math.floor(product.price / 100) * 5;
 
       const transaction = await storage.createTransaction({
         userId: user.id,

@@ -26,7 +26,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <QrCode className="w-5 h-5" />
               </div>
               <span className="font-display font-bold text-xl tracking-tight text-foreground">
-                Scan<span className="text-primary">w</span>
+                Nasu<span className="text-primary">katsu</span>
               </span>
             </Link>
 

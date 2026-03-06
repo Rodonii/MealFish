@@ -1,0 +1,217 @@
+Create a full-stack modern web application for a QR Code Product Purchase and Loyalty Points System.
+
+The website should allow customers to scan QR codes on products, purchase them digitally, earn points, and redeem rewards.
+
+CORE FEATURES
+
+User Authentication
+
+Users must create an account and login.
+
+Store user profile with:
+
+name
+
+email
+
+total points
+
+purchase history
+
+Secure authentication with JWT or session-based login.
+
+Product Catalog
+Create a product page that displays:
+
+product image
+
+product name
+
+description
+
+price
+
+points earned per purchase
+
+Each product should automatically generate a unique QR code that links to its purchase page.
+
+QR Code Purchase Flow
+When a user scans the QR code:
+
+open the product purchase page
+
+show product details
+
+user confirms purchase
+
+After confirmation:
+
+record the transaction
+
+add the correct points to the user account
+
+update the points wallet
+
+Anti-Spam / Anti-Cheat Protection
+Prevent users from abusing the system.
+
+Implement:
+
+Disable the buy button immediately after clicking
+
+Only allow one purchase per QR scan
+
+Use unique transaction IDs
+
+Server validation before awarding points
+
+Prevent duplicate requests
+
+Add purchase cooldown (3–5 seconds)
+
+Points should only be awarded after a successful transaction
+
+Loyalty Points System
+Points should accumulate in a Points Wallet.
+
+Display:
+
+Total points
+
+Points earned from each purchase
+
+Points history
+
+Example:
+₱100 purchase = 5 points
+
+Rewards Redemption
+Create a rewards page where users can redeem items using points.
+
+Rewards should display:
+
+reward image
+
+reward name
+
+points required
+
+redeem button
+
+When redeemed:
+
+deduct points
+
+record redemption history
+
+Transaction History
+Create a history page that shows:
+
+product purchased
+
+purchase date and time
+
+amount paid
+
+points earned
+
+Admin Dashboard
+Admin can:
+
+add new products
+
+edit product price
+
+set points value
+
+generate QR codes automatically
+
+view all transactions
+
+manage rewards
+
+QR Code Generator
+Every product automatically generates a QR code that links to:
+website.com/products/productID
+
+Include:
+
+download QR code option
+
+printable QR labels
+
+UI/UX Design
+Design the interface with:
+
+modern card layout
+
+smooth animations
+
+responsive mobile-first design
+
+clean dashboard layout
+
+Dark Mode Support
+Include a theme toggle:
+
+Light Mode
+
+Dark Mode
+
+Dark theme should include:
+
+dark backgrounds
+
+soft shadows
+
+accent highlight colors
+
+readable typography
+
+Security & Validation
+Ensure:
+
+server-side validation for purchases
+
+prevent duplicate transactions
+
+protect points system from manipulation
+
+validate all API inputs
+
+Technology Stack
+Use modern tools:
+
+Frontend
+
+React or Next.js
+
+TailwindCSS
+
+Framer Motion
+
+QR Code Generator Library
+
+Backend
+
+Node.js with Express
+
+Database
+
+PostgreSQL or Firebase
+
+Additional features:
+
+REST API or GraphQL
+
+Proper database relations for users, products, transactions, and rewards
+
+The system should focus on:
+
+reliability
+
+secure transactions
+
+smooth user experience
+
+scalable loyalty rewards system.

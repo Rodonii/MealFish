@@ -1,0 +1,97 @@
+Create a modern web application for a **product store with a QR code purchasing system and loyalty points**.
+
+Core Features:
+
+1. **Product Page**
+
+* Display a list of products with image, name, description, and price.
+* Each product should automatically generate a **QR code** that links to its product purchase page.
+* When a user scans the QR code, they can view the product and confirm the purchase.
+
+2. **Purchase System**
+
+* When a user buys a product, they should receive **loyalty points based on the product price or predefined points value**.
+* Example: ₱100 = 5 points or a custom points value per product.
+* Store the transaction and points earned in the database.
+
+3. **Anti-Spam Purchase Protection**
+
+* Prevent users from **spamming the buy button**.
+* Implement protections such as:
+
+  * Disable the buy button after clicking until the transaction finishes.
+  * Add server-side validation so a purchase can only be recorded **once per scan or transaction ID**.
+  * Add a short cooldown (ex: 3–5 seconds) before another purchase can be made.
+  * Ensure points are only awarded **once per successful purchase**.
+
+4. **Points Wallet**
+
+* Each user should have a **points balance**.
+* Display:
+
+  * Total points
+  * Points earned history
+  * Recent purchases
+
+5. **Rewards Redemption**
+
+* Create a **Rewards Store** where users can redeem items using points.
+* Each reward should show:
+
+  * Required points
+  * Product/item image
+  * Redeem button
+* Deduct the points automatically when redeemed.
+
+6. **Transaction History**
+
+* Show user purchase history including:
+
+  * Product name
+  * Date and time
+  * Amount paid
+  * Points earned
+
+7. **Admin/Product Management**
+
+* Admin can:
+
+  * Add products
+  * Edit price
+  * Set points value
+  * Generate QR codes automatically
+
+8. **Dark Mode UI**
+
+* Provide **light and dark theme toggle**.
+* Dark mode should include:
+
+  * dark background
+  * soft card shadows
+  * accent colors for buttons
+  * readable typography
+
+9. **Modern UI Design**
+
+* Use **TailwindCSS**
+* Responsive design for mobile and desktop
+* Smooth animations (Framer Motion)
+* Clean card layout for products
+* Elegant dashboard for points and rewards
+
+10. **Tech Stack**
+    Use:
+
+* React / Next.js
+* TailwindCSS
+* Framer Motion
+* QR code generator library
+* Node.js or Express backend
+* Database (PostgreSQL or Firebase)
+
+The system should prioritize:
+
+* security
+* preventing duplicate purchases
+* accurate points tracking
+* smooth user experience.

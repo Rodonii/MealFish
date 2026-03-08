@@ -1,11 +1,13 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { Award, QrCode, History, LogOut, Package } from "lucide-react";
+import { Award, QrCode, History, LogOut, Package, Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import { useTheme } from "@/hooks/use-theme";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [location] = useLocation();
 
   if (!user) return <>{children}</>;
@@ -16,8 +18,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f8fafc]">
-      <header className="sticky top-0 z-50 w-full border-b border-white/20 glass-card">
+    <div className="min-h-screen flex flex-col bg-[#f8fafc] dark:bg-slate-950">
+      <header className="sticky top-0 z-50 w-full border-b border-white/20 dark:border-slate-700/30 glass-card">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
             {/* Logo */}
@@ -62,6 +64,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <span className="text-sm font-medium text-muted-foreground">
                   {user.username}
                 </span>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={toggleTheme}
+                  className="hover:text-primary hover:bg-primary/10"
+                  title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+                >
+                  {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+                </Button>
                 <Button variant="ghost" size="icon" onClick={logout} className="hover:text-destructive hover:bg-destructive/10">
                   <LogOut className="w-4 h-4" />
                 </Button>
@@ -71,7 +82,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </header>
       {/* Mobile Navigation Bar (Bottom) */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass-card border-t border-b-0 pb-safe">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass-card border-t border-slate-700/30 dark:border-slate-700/30 border-b-0 pb-safe">
         <div className="flex justify-around items-center h-16 px-4">
           {navItems.map((item) => (
             <Link 
@@ -85,6 +96,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <span className="text-[10px] font-medium">{item.label}</span>
             </Link>
           ))}
+          <button 
+            onClick={toggleTheme}
+            className="flex flex-col items-center justify-center w-16 h-full gap-1 text-muted-foreground hover:text-primary transition-colors"
+            title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+          >
+            {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+            <span className="text-[10px] font-medium">Theme</span>
+          </button>
           <button 
             onClick={logout}
             className="flex flex-col items-center justify-center w-16 h-full gap-1 text-muted-foreground hover:text-destructive transition-colors"

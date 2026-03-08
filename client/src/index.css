@@ -41,6 +41,37 @@
     --radius: 1rem;
   }
 
+  .dark {
+    --background: 222 84% 5%;
+    --foreground: 210 40% 98%;
+    
+    --card: 222 84% 10%;
+    --card-foreground: 210 40% 98%;
+    --card-border: 217 32% 17%;
+    
+    --popover: 222 84% 10%;
+    --popover-foreground: 210 40% 98%;
+    
+    --primary: 243 75% 59%;
+    --primary-foreground: 222 84% 5%;
+    
+    --secondary: 217 32% 17%;
+    --secondary-foreground: 210 40% 98%;
+    
+    --muted: 217 32% 17%;
+    --muted-foreground: 215 20% 65%;
+    
+    --accent: 38 92% 50%;
+    --accent-foreground: 222 84% 5%;
+    
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 222 84% 5%;
+
+    --border: 217 32% 17%;
+    --input: 217 32% 17%;
+    --ring: 243 75% 59%;
+  }
+
   body {
     @apply bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary;
     font-family: var(--font-sans);
@@ -54,7 +85,7 @@
 
 @layer utilities {
   .glass-card {
-    @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-[0_8px_30px_rgb(0,0,0,0.04)];
+    @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:bg-slate-900/80 dark:border-slate-700/20;
   }
   
   .text-gradient {

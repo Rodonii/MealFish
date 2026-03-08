@@ -15,6 +15,8 @@ export const products = pgTable("products", {
   description: text("description").notNull(),
   price: integer("price").notNull(), // in cents
   imageUrl: text("image_url").notNull(),
+  ingredients: text("ingredients").notNull().default(""), // JSON array as string
+  nutrition: text("nutrition").notNull().default(""), // JSON object as string
 });
 
 export const transactions = pgTable("transactions", {

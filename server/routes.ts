@@ -122,20 +122,26 @@ async function seedProducts() {
       {
         name: "Premium Coffee Beans",
         description: "A 1lb bag of our signature dark roast.",
-        price: 1599, // $15.99
+        price: 1599,
         imageUrl: "https://images.unsplash.com/photo-1559525839-b184a4d698c7?w=500&h=500&fit=crop",
+        ingredients: JSON.stringify(["100% Arabica Coffee Beans", "Roasted to perfection"]),
+        nutrition: JSON.stringify({ calories: 0, protein: "0g", carbs: "0g", fat: "0g", caffeine: "95mg per cup" }),
       },
       {
         name: "Ceramic Mug",
         description: "A beautiful, handmade 12oz ceramic coffee mug.",
-        price: 2400, // $24.00
+        price: 2400,
         imageUrl: "https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?w=500&h=500&fit=crop",
+        ingredients: JSON.stringify(["Ceramic", "Food-safe glaze", "Microwave safe"]),
+        nutrition: JSON.stringify({ material: "Premium Ceramic", capacity: "12oz", weight: "380g" }),
       },
       {
         name: "Canvas Tote Bag",
         description: "Durable canvas tote bag for your everyday needs.",
-        price: 1850, // $18.50
+        price: 1850,
         imageUrl: "https://images.unsplash.com/photo-1597484662317-c8e1bdc604be?w=500&h=500&fit=crop",
+        ingredients: JSON.stringify(["100% Canvas Cotton", "Reinforced handles", "Machine washable"]),
+        nutrition: JSON.stringify({ material: "Canvas", capacity: "40L", weight: "250g", dimensions: "40x35x20cm" }),
       }
     ];
 

@@ -1,3 +1,4 @@
+import React from "react";
 import { useParams, useLocation } from "wouter";
 import { useProduct } from "@/hooks/use-products";
 import { usePurchase } from "@/hooks/use-transactions";
@@ -5,7 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { formatPrice } from "@/lib/utils";
 import QRCode from "react-qr-code";
 import { motion } from "framer-motion";
-import { Loader2, QrCode as QrIcon, ArrowLeft, CheckCircle2, ShieldCheck, Zap } from "lucide-react";
+import { Loader2, QrCode as QrIcon, ArrowLeft, CheckCircle2, ShieldCheck, Zap, Info, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
@@ -15,9 +16,20 @@ export default function ProductDetail() {
   const { user, updatePoints } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const [isProcessing, setIsProcessing] = React.useState(false);
+  const [cooldownRemaining, setCooldownRemaining] = React.useState(0);
   
   const { data: product, isLoading: productLoading } = useProduct(Number(id));
   const purchaseMutation = usePurchase();
+
+  React.useEffect(() => {
+    if (cooldownRemaining > 0) {
+      const timer = setTimeout(() => {
+        setCooldownRemaining(cooldownRemaining - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [cooldownRemaining]);
 
   if (productLoading) {
     return (
@@ -37,7 +49,10 @@ export default function ProductDetail() {
   }
 
   const handlePurchase = async () => {
-    if (!user) return;
+    if (!user || isProcessing || cooldownRemaining > 0) return;
+    
+    setIsProcessing(true);
+    setCooldownRemaining(5);
     
     try {
       const result = await purchaseMutation.mutateAsync({
@@ -64,8 +79,21 @@ export default function ProductDetail() {
         description: "There was an error processing your simulated purchase.",
         variant: "destructive",
       });
+    } finally {
+      setIsProcessing(false);
     }
   };
+
+  const parseJsonSafe = (jsonString: string, fallback: any = []) => {
+    try {
+      return JSON.parse(jsonString);
+    } catch {
+      return fallback;
+    }
+  };
+
+  const ingredients = parseJsonSafe(product.ingredients || "", []);
+  const nutrition = parseJsonSafe(product.nutrition || "", {});
 
   const pointsToEarn = Math.floor(product.price / 100) * 5;
   const scanUrl = `${window.location.origin}/products/${product.id}`;
@@ -117,6 +145,49 @@ export default function ProductDetail() {
               <p className="text-lg text-muted-foreground leading-relaxed">
                 {product.description}
               </p>
+
+              {/* Ingredients Section */}
+              {ingredients.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.2 }}
+                  className="mt-6 p-4 bg-secondary/40 rounded-2xl border border-border/50"
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <Info className="w-4 h-4 text-primary" />
+                    <h4 className="font-bold text-foreground">Ingredients & Details</h4>
+                  </div>
+                  <ul className="space-y-2">
+                    {ingredients.map((item: string, idx: number) => (
+                      <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
+                        <span className="text-primary font-bold mt-1">•</span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </motion.div>
+              )}
+
+              {/* Nutrition Section */}
+              {Object.keys(nutrition).length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.3 }}
+                  className="mt-4 p-4 bg-accent/10 rounded-2xl border border-accent/20"
+                >
+                  <h4 className="font-bold text-foreground mb-3">Specifications</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    {Object.entries(nutrition).map(([key, value]: [string, any]) => (
+                      <div key={key} className="text-sm">
+                        <span className="text-muted-foreground capitalize">{key}:</span>
+                        <p className="font-semibold text-foreground">{String(value)}</p>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
               
               <div className="mt-8 flex items-center gap-6 text-sm text-muted-foreground font-medium border-t pt-6">
                 <div className="flex items-center gap-2">
@@ -169,13 +240,18 @@ export default function ProductDetail() {
 
               <Button 
                 onClick={handlePurchase} 
-                disabled={purchaseMutation.isPending}
+                disabled={purchaseMutation.isPending || isProcessing || cooldownRemaining > 0}
                 className="w-full h-16 text-lg rounded-2xl bg-gradient-to-r from-primary to-blue-600 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 hover:-translate-y-1"
               >
                 {purchaseMutation.isPending ? (
                   <>
                     <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                     Processing...
+                  </>
+                ) : cooldownRemaining > 0 ? (
+                  <>
+                    <Clock className="w-5 h-5 mr-2" />
+                    Wait {cooldownRemaining}s
                   </>
                 ) : (
                   <>

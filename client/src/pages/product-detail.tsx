@@ -163,7 +163,7 @@ export default function ProductDetail() {
   const ingredients = parseJsonSafe((product as any).ingredients || "", []);
   const nutrition = parseJsonSafe((product as any).nutrition || "", {});
 
-  const pointsToEarn = Math.floor(product.price / 100) * 5;
+  const pointsToEarn = Math.floor((product.price / 100) * 0.30);
   const scanUrl = `${window.location.origin}/products/${product.id}`;
   const paymentQrUrl = settings?.paymentQrUrl || "";
   const status = pollData?.request.status ?? null;

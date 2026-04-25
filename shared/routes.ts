@@ -80,7 +80,10 @@ export const api = {
       method: 'GET' as const,
       path: '/api/settings' as const,
       responses: {
-        200: z.object({ logoUrl: z.string().nullable() }),
+        200: z.object({
+          logoUrl: z.string().nullable(),
+          paymentQrUrl: z.string().nullable(),
+        }),
       },
     },
     setLogo: {
@@ -89,6 +92,15 @@ export const api = {
       input: z.object({ logoUrl: z.string().min(1) }),
       responses: {
         200: z.object({ logoUrl: z.string() }),
+        400: errorSchemas.validation,
+      },
+    },
+    setPaymentQr: {
+      method: 'POST' as const,
+      path: '/api/settings/payment-qr' as const,
+      input: z.object({ paymentQrUrl: z.string().min(1) }),
+      responses: {
+        200: z.object({ paymentQrUrl: z.string() }),
         400: errorSchemas.validation,
       },
     },

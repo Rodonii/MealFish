@@ -6,10 +6,12 @@ import { useAuth } from "@/hooks/use-auth";
 import { formatPrice } from "@/lib/utils";
 import QRCode from "react-qr-code";
 import { motion } from "framer-motion";
-import { Loader2, QrCode as QrIcon, ArrowLeft, CheckCircle2, ShieldCheck, Zap, Info, Clock } from "lucide-react";
+import { Loader2, QrCode as QrIcon, ArrowLeft, CheckCircle2, ShieldCheck, Zap, Info, Clock, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@shared/routes";
 
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
@@ -20,6 +22,9 @@ export default function ProductDetail() {
   const [cooldownRemaining, setCooldownRemaining] = React.useState(0);
   
   const { data: product, isLoading: productLoading } = useProduct(Number(id));
+  const { data: settings } = useQuery<{ logoUrl: string | null; paymentQrUrl: string | null }>({
+    queryKey: [api.settings.get.path],
+  });
   const purchaseMutation = usePurchase();
 
   React.useEffect(() => {
@@ -97,6 +102,7 @@ export default function ProductDetail() {
 
   const pointsToEarn = Math.floor(product.price / 100) * 5;
   const scanUrl = `${window.location.origin}/products/${product.id}`;
+  const paymentQrUrl = settings?.paymentQrUrl || "";
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full">
@@ -212,36 +218,69 @@ export default function ProductDetail() {
               transition={{ duration: 0.6, type: "spring", bounce: 0.4, delay: 0.2 }}
               className="w-full max-w-sm mx-auto flex flex-col items-center z-10"
             >
-              <div className="text-center mb-8">
-                <h3 className="text-2xl font-display font-bold text-foreground mb-2">Scan to Purchase</h3>
-                <p className="text-muted-foreground">Point your camera at the QR code below</p>
+              <div className="text-center mb-6">
+                <h3 className="text-2xl font-display font-bold text-foreground mb-2">
+                  {paymentQrUrl ? "Scan to Pay" : "Scan to Purchase"}
+                </h3>
+                <p className="text-muted-foreground">
+                  {paymentQrUrl
+                    ? "Open your e-wallet (GCash / Maya) and scan this QR"
+                    : "Point your camera at the QR code below"}
+                </p>
               </div>
 
-              <div className="bg-white p-6 rounded-3xl shadow-lg border border-border/50 mb-10 w-64 h-64 flex items-center justify-center relative group dark:bg-white">
-                <QRCode 
-                  value={scanUrl} 
-                  size={200}
-                  style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                  className="transition-transform duration-500 group-hover:scale-105"
-                />
-                
+              {/* Amount-to-pay banner */}
+              <div className="w-full mb-4 rounded-2xl border border-primary/20 bg-primary/5 px-5 py-4 flex items-center justify-between" data-testid="banner-amount">
+                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                  <Wallet className="w-4 h-4 text-primary" />
+                  Amount to pay
+                </div>
+                <div className="text-2xl font-display font-bold text-primary" data-testid="text-amount">
+                  {formatPrice(product.price)}
+                </div>
+              </div>
+
+              <div className="bg-white p-6 rounded-3xl shadow-lg border border-border/50 mb-8 w-64 h-64 flex items-center justify-center relative group dark:bg-white">
+                {paymentQrUrl ? (
+                  <img
+                    src={paymentQrUrl}
+                    alt="Owner e-wallet QR"
+                    className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
+                    data-testid="img-payment-qr"
+                  />
+                ) : (
+                  <QRCode
+                    value={scanUrl}
+                    size={200}
+                    style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                    className="transition-transform duration-500 group-hover:scale-105"
+                  />
+                )}
+
                 {/* Scanner effect line */}
                 <div className="absolute top-0 left-0 right-0 h-1 bg-primary/50 shadow-[0_0_10px_#4f46e5] animate-[scan_2s_ease-in-out_infinite]" />
               </div>
 
-              <div className="w-full relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-border"></div>
+              {paymentQrUrl ? (
+                <p className="text-xs text-muted-foreground text-center mb-6">
+                  After paying the exact amount in your e-wallet, tap the button below to confirm and earn your points.
+                </p>
+              ) : (
+                <div className="w-full relative mb-6">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-border"></div>
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-4 bg-slate-50 dark:bg-slate-900 text-muted-foreground font-medium">Or for this demo</span>
+                  </div>
                 </div>
-                <div className="relative flex justify-center text-sm mb-8">
-                  <span className="px-4 bg-slate-50 text-muted-foreground font-medium">Or for this demo</span>
-                </div>
-              </div>
+              )}
 
-              <Button 
-                onClick={handlePurchase} 
+              <Button
+                onClick={handlePurchase}
                 disabled={purchaseMutation.isPending || isProcessing || cooldownRemaining > 0}
                 className="w-full h-16 text-lg rounded-2xl bg-gradient-to-r from-primary to-blue-600 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 hover:-translate-y-1"
+                data-testid="button-confirm-purchase"
               >
                 {purchaseMutation.isPending ? (
                   <>
@@ -252,6 +291,11 @@ export default function ProductDetail() {
                   <>
                     <Clock className="w-5 h-5 mr-2" />
                     Wait {cooldownRemaining}s
+                  </>
+                ) : paymentQrUrl ? (
+                  <>
+                    <CheckCircle2 className="w-6 h-6 mr-2" />
+                    I've Paid — Confirm Purchase
                   </>
                 ) : (
                   <>

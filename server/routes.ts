@@ -140,10 +140,13 @@ export async function registerRoutes(
     }
   });
 
-  // Settings (branding)
+  // Settings (branding & payment)
   app.get(api.settings.get.path, async (_req, res) => {
-    const logoUrl = await storage.getSetting("logoUrl");
-    res.json({ logoUrl });
+    const [logoUrl, paymentQrUrl] = await Promise.all([
+      storage.getSetting("logoUrl"),
+      storage.getSetting("paymentQrUrl"),
+    ]);
+    res.json({ logoUrl, paymentQrUrl });
   });
 
   app.post(api.settings.setLogo.path, requireAdmin, async (req, res) => {
@@ -151,6 +154,22 @@ export async function registerRoutes(
       const input = api.settings.setLogo.input.parse(req.body);
       await storage.setSetting("logoUrl", input.logoUrl);
       res.json({ logoUrl: input.logoUrl });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
+  app.post(api.settings.setPaymentQr.path, requireAdmin, async (req, res) => {
+    try {
+      const input = api.settings.setPaymentQr.input.parse(req.body);
+      await storage.setSetting("paymentQrUrl", input.paymentQrUrl);
+      res.json({ paymentQrUrl: input.paymentQrUrl });
     } catch (err) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({

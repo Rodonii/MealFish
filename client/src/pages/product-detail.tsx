@@ -168,9 +168,11 @@ export default function ProductDetail() {
   const paymentQrUrl = settings?.paymentQrUrl || "";
   const status = pollData?.request.status ?? null;
   const isPaymentActive = paymentRequestId != null;
-  const isWaiting = isPaymentActive && status === "pending";
   const isConfirmed = status === "confirmed";
   const isRejected = status === "rejected";
+  // Show the waiting screen as soon as the request exists, even before
+  // the first status poll has returned. Only hide it once we know it's resolved.
+  const isWaiting = isPaymentActive && !isConfirmed && !isRejected;
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full">

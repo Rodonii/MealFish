@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
+import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { QrCode, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { api } from "@shared/routes";
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -13,6 +15,11 @@ export default function Login() {
   const { login, isLoggingIn } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+
+  const { data: settings } = useQuery<{ logoUrl: string | null }>({
+    queryKey: [api.settings.get.path],
+  });
+  const logoUrl = settings?.logoUrl;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,9 +54,15 @@ export default function Login() {
       >
         <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 dark:border-slate-700/40 p-8 sm:p-12 relative z-10">
           <div className="text-center mb-10">
-            <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-blue-500 flex items-center justify-center text-white shadow-xl shadow-primary/30 mb-6 transform -rotate-6">
-              <QrCode className="w-8 h-8 transform rotate-6" />
-            </div>
+            {logoUrl ? (
+              <div className="mx-auto w-20 h-20 rounded-2xl overflow-hidden bg-white shadow-xl shadow-primary/20 mb-6 border border-border">
+                <img src={logoUrl} alt="Store logo" className="w-full h-full object-cover" data-testid="img-login-logo" />
+              </div>
+            ) : (
+              <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-blue-500 flex items-center justify-center text-white shadow-xl shadow-primary/30 mb-6 transform -rotate-6">
+                <QrCode className="w-8 h-8 transform rotate-6" />
+              </div>
+            )}
             <h1 className="text-3xl font-display font-bold text-foreground tracking-tight">
               Welcome to <span className="text-gradient">FishTil</span>
             </h1>

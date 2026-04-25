@@ -8,13 +8,30 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, Loader2, ImagePlus, ArrowLeft, X } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { Upload, Loader2, ImagePlus, ArrowLeft, X, ShieldAlert } from "lucide-react";
 import { Link } from "wouter";
 
 export default function NewProduct() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { user } = useAuth();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  if (!user?.isAdmin) {
+    return (
+      <div className="max-w-xl mx-auto px-4 sm:px-6 w-full text-center py-20">
+        <ShieldAlert className="w-14 h-14 mx-auto mb-4 text-muted-foreground" />
+        <h1 className="text-3xl font-display font-bold text-foreground mb-2">Admins only</h1>
+        <p className="text-muted-foreground mb-8">
+          Adding products is restricted to the admin account. Log in as <span className="font-semibold">admin</span> to manage the catalog.
+        </p>
+        <Link href="/products">
+          <Button data-testid="button-back-products">Back to products</Button>
+        </Link>
+      </div>
+    );
+  }
 
   const [name, setName] = React.useState("");
   const [description, setDescription] = React.useState("");
@@ -48,6 +65,7 @@ export default function NewProduct() {
         method: "POST",
         body: formData,
         credentials: "include",
+        headers: { "x-user-id": String(user.id) },
       });
       if (!res.ok) {
         const text = await res.text();

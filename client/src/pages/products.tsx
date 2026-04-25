@@ -4,9 +4,11 @@ import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { QrCode, Loader2, Plus, Package, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function Products() {
   const { data: products, isLoading, error } = useProducts();
+  const { user } = useAuth();
 
   if (isLoading) {
     return (
@@ -47,12 +49,14 @@ export default function Products() {
           <h1 className="text-4xl font-display font-bold text-foreground">Available Meals</h1>
           <p className="text-muted-foreground mt-2 text-lg">Purchase using e-wallet and earn points instantly.</p>
         </div>
-        <Link href="/products/new">
-          <Button className="rounded-full h-12 px-6 font-semibold gap-2" data-testid="button-add-product">
-            <Upload className="w-4 h-4" />
-            Add Product
-          </Button>
-        </Link>
+        {user?.isAdmin && (
+          <Link href="/products/new">
+            <Button className="rounded-full h-12 px-6 font-semibold gap-2" data-testid="button-add-product">
+              <Upload className="w-4 h-4" />
+              Add Product
+            </Button>
+          </Link>
+        )}
       </div>
 
       {products.length === 0 ? (

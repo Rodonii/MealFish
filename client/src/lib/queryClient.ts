@@ -7,14 +7,30 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+function getCurrentUserId(): string | null {
+  try {
+    const stored = localStorage.getItem("scanshop_user");
+    if (!stored) return null;
+    const parsed = JSON.parse(stored);
+    return parsed?.id != null ? String(parsed.id) : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  const headers: Record<string, string> = {};
+  if (data) headers["Content-Type"] = "application/json";
+  const userId = getCurrentUserId();
+  if (userId) headers["x-user-id"] = userId;
+
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers,
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });

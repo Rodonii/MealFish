@@ -39,23 +39,46 @@ export async function registerRoutes(
   // Seed initial products if none exist
   await seedProducts();
 
+  // Helper: only allow admins through
+  const requireAdmin = async (req: any, res: any, next: any) => {
+    const userIdHeader = req.header("x-user-id");
+    const userId = userIdHeader ? Number(userIdHeader) : NaN;
+    if (!Number.isFinite(userId)) {
+      return res.status(401).json({ message: "Login required" });
+    }
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(401).json({ message: "Login required" });
+    }
+    if (!user.isAdmin) {
+      return res.status(403).json({ message: "Only admins can do that" });
+    }
+    next();
+  };
+
   // Users
   app.post(api.users.login.path, async (req, res) => {
     try {
       const input = api.users.login.input.parse(req.body);
+      const isAdminUsername = input.username.toLowerCase() === "admin";
       let user = await storage.getUserByUsername(input.username);
-      
+
       if (!user) {
-        user = await storage.createUser({ 
+        user = await storage.createUser({
           username: input.username,
-          password: input.password // In a real app, hash this!
-        });
+          password: input.password, // In a real app, hash this!
+          isAdmin: isAdminUsername,
+        } as any);
       } else {
         if (user.password !== input.password) {
           return res.status(401).json({ message: "Invalid password" });
         }
+        // Promote the special "admin" username if it isn't admin yet
+        if (isAdminUsername && !user.isAdmin) {
+          user = await storage.setUserAdmin(user.id, true);
+        }
       }
-      
+
       res.status(200).json(user);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -79,8 +102,8 @@ export async function registerRoutes(
   // Serve uploaded images
   app.use("/uploads", express.static(uploadsDir));
 
-  // Image upload (multipart)
-  app.post(api.products.upload.path, upload.single("image"), (req, res) => {
+  // Image upload (multipart) - admin only
+  app.post(api.products.upload.path, requireAdmin, upload.single("image"), (req, res) => {
     if (!req.file) {
       return res.status(400).json({ message: "No image file provided" });
     }
@@ -101,7 +124,7 @@ export async function registerRoutes(
     res.json(product);
   });
 
-  app.post(api.products.create.path, async (req, res) => {
+  app.post(api.products.create.path, requireAdmin, async (req, res) => {
     try {
       const input = api.products.create.input.parse(req.body);
       const product = await storage.createProduct(input);

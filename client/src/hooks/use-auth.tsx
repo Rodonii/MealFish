@@ -8,6 +8,7 @@ export interface LocalUser {
   id: number;
   username: string;
   points: number;
+  isAdmin?: boolean;
 }
 
 interface AuthContextType {

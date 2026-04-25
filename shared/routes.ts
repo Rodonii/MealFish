@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { users, products, transactions } from './schema';
+import { users, products, transactions, paymentRequests } from './schema';
 
 export const errorSchemas = {
   validation: z.object({
@@ -130,6 +130,58 @@ export const api = {
         200: z.array(z.custom<typeof transactions.$inferSelect>()),
       },
     }
+  },
+  payments: {
+    create: {
+      method: 'POST' as const,
+      path: '/api/payments' as const,
+      input: z.object({ productId: z.number().int().positive() }),
+      responses: {
+        201: z.custom<typeof paymentRequests.$inferSelect>(),
+        400: errorSchemas.validation,
+        404: errorSchemas.notFound,
+      },
+    },
+    status: {
+      method: 'GET' as const,
+      path: '/api/payments/status/:id' as const,
+      responses: {
+        200: z.object({
+          request: z.custom<typeof paymentRequests.$inferSelect>(),
+          newPointsTotal: z.number().nullable(),
+        }),
+        404: errorSchemas.notFound,
+      },
+    },
+    listPending: {
+      method: 'GET' as const,
+      path: '/api/payments/pending' as const,
+      responses: {
+        200: z.array(z.object({
+          request: z.custom<typeof paymentRequests.$inferSelect>(),
+          username: z.string(),
+          productName: z.string(),
+        })),
+      },
+    },
+    confirm: {
+      method: 'POST' as const,
+      path: '/api/payments/:id/confirm' as const,
+      responses: {
+        200: z.custom<typeof paymentRequests.$inferSelect>(),
+        400: errorSchemas.validation,
+        404: errorSchemas.notFound,
+      },
+    },
+    reject: {
+      method: 'POST' as const,
+      path: '/api/payments/:id/reject' as const,
+      responses: {
+        200: z.custom<typeof paymentRequests.$inferSelect>(),
+        400: errorSchemas.validation,
+        404: errorSchemas.notFound,
+      },
+    },
   },
 };
 

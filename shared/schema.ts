@@ -34,6 +34,18 @@ export const transactions = pgTable("transactions", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const paymentRequests = pgTable("payment_requests", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  productId: integer("product_id").notNull(),
+  amount: integer("amount").notNull(), // in cents, locked at request time
+  pointsToEarn: integer("points_to_earn").notNull(),
+  referenceCode: text("reference_code").notNull().unique(),
+  status: text("status").notNull().default("pending"), // pending | confirmed | rejected
+  transactionId: integer("transaction_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, points: true, isAdmin: true });
 export const insertProductSchema = createInsertSchema(products).omit({ id: true });
 export const insertTransactionSchema = createInsertSchema(transactions).omit({ id: true, createdAt: true });
@@ -46,3 +58,5 @@ export type InsertProduct = z.infer<typeof insertProductSchema>;
 
 export type Transaction = typeof transactions.$inferSelect;
 export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
+
+export type PaymentRequest = typeof paymentRequests.$inferSelect;

@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@shared/routes";
-import { Award, QrCode, History, LogOut, Package, Sun, Moon, Image as ImageIcon } from "lucide-react";
+import { Award, QrCode, History, LogOut, Package, Sun, Moon, Image as ImageIcon, Inbox } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { useTheme } from "@/hooks/use-theme";
@@ -22,7 +22,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const navItems = [
     { href: "/products", label: "Products", icon: Package },
     { href: "/history", label: "History", icon: History },
-    ...(user.isAdmin ? [{ href: "/branding", label: "Branding", icon: ImageIcon }] : []),
+    ...(user.isAdmin
+      ? [
+          { href: "/payments", label: "Payments", icon: Inbox },
+          { href: "/branding", label: "Branding", icon: ImageIcon },
+        ]
+      : []),
   ];
 
   const logoUrl = settings?.logoUrl;

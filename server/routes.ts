@@ -229,6 +229,98 @@ export async function registerRoutes(
     res.json(transactions);
   });
 
+  // Helper: identify the logged-in customer from the x-user-id header
+  const requireUser = async (req: any, res: any, next: any) => {
+    const userIdHeader = req.header("x-user-id");
+    const userId = userIdHeader ? Number(userIdHeader) : NaN;
+    if (!Number.isFinite(userId)) {
+      return res.status(401).json({ message: "Login required" });
+    }
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(401).json({ message: "Login required" });
+    }
+    req.currentUser = user;
+    next();
+  };
+
+  // ---- Payment requests (admin-confirmed e-wallet flow) ----
+
+  // List pending requests (admin only). MUST be registered before "/:id" routes.
+  app.get(api.payments.listPending.path, requireAdmin, async (_req, res) => {
+    const pending = await storage.listPendingPaymentRequests();
+    res.json(pending);
+  });
+
+  // Customer creates a new pending payment request
+  app.post(api.payments.create.path, requireUser, async (req: any, res) => {
+    try {
+      const input = api.payments.create.input.parse(req.body);
+      const product = await storage.getProduct(input.productId);
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+      const pointsToEarn = Math.floor(product.price / 100) * 5;
+      const request = await storage.createPaymentRequest({
+        userId: req.currentUser.id,
+        productId: product.id,
+        amount: product.price,
+        pointsToEarn,
+      });
+      res.status(201).json(request);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join("."),
+        });
+      }
+      throw err;
+    }
+  });
+
+  // Customer (or admin) polls payment status
+  app.get(api.payments.status.path, requireUser, async (req: any, res) => {
+    const id = Number(req.params.id);
+    const request = await storage.getPaymentRequest(id);
+    if (!request) {
+      return res.status(404).json({ message: "Payment request not found" });
+    }
+    if (request.userId !== req.currentUser.id && !req.currentUser.isAdmin) {
+      return res.status(403).json({ message: "Not allowed" });
+    }
+    let newPointsTotal: number | null = null;
+    if (request.status === "confirmed") {
+      const owner = await storage.getUser(request.userId);
+      newPointsTotal = owner?.points ?? null;
+    }
+    res.json({ request, newPointsTotal });
+  });
+
+  app.post(api.payments.confirm.path, requireAdmin, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const result = await storage.resolvePaymentRequest(id, "confirm");
+      res.json(result.request);
+    } catch (err: any) {
+      const message = err?.message || "Could not confirm payment";
+      const status = message.includes("not found") ? 404 : 400;
+      res.status(status).json({ message });
+    }
+  });
+
+  app.post(api.payments.reject.path, requireAdmin, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const result = await storage.resolvePaymentRequest(id, "reject");
+      res.json(result.request);
+    } catch (err: any) {
+      const message = err?.message || "Could not reject payment";
+      const status = message.includes("not found") ? 404 : 400;
+      res.status(status).json({ message });
+    }
+  });
+
   return httpServer;
 }
 

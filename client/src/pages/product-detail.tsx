@@ -257,8 +257,6 @@ export default function ProductDetail() {
                   />
                 )}
 
-                {/* Scanner effect line */}
-                <div className="absolute top-0 left-0 right-0 h-1 bg-primary/50 shadow-[0_0_10px_#4f46e5] animate-[scan_2s_ease-in-out_infinite]" />
               </div>
 
               {paymentQrUrl ? (

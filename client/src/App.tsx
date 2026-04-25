@@ -12,6 +12,7 @@ import NotFound from "@/pages/not-found";
 import Login from "./pages/login";
 import Products from "./pages/products";
 import ProductDetail from "./pages/product-detail";
+import NewProduct from "./pages/new-product";
 import History from "./pages/history";
 
 function ProtectedRoute({ component: Component, ...rest }: { component: any, path: string }) {
@@ -39,6 +40,9 @@ function Router() {
         <Route path="/" component={Login} />
         <Route path="/products">
           {() => <ProtectedRoute component={Products} path="/products" />}
+        </Route>
+        <Route path="/products/new">
+          {() => <ProtectedRoute component={NewProduct} path="/products/new" />}
         </Route>
         <Route path="/products/:id">
           {() => <ProtectedRoute component={ProductDetail} path="/products/:id" />}

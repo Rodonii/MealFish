@@ -50,6 +50,30 @@ export const api = {
         404: errorSchemas.notFound,
       },
     },
+    create: {
+      method: 'POST' as const,
+      path: '/api/products' as const,
+      input: z.object({
+        name: z.string().min(1),
+        description: z.string().min(1),
+        price: z.number().int().positive(),
+        imageUrl: z.string().min(1),
+        ingredients: z.string().optional().default(""),
+        nutrition: z.string().optional().default(""),
+      }),
+      responses: {
+        201: z.custom<typeof products.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
+    upload: {
+      method: 'POST' as const,
+      path: '/api/products/upload' as const,
+      responses: {
+        200: z.object({ url: z.string() }),
+        400: errorSchemas.validation,
+      },
+    },
   },
   transactions: {
     purchase: {

@@ -5,6 +5,32 @@ import { api, errorSchemas } from "@shared/routes";
 import { z } from "zod";
 import { db } from "./db";
 import { products } from "@shared/schema";
+import express from "express";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+
+const uploadsDir = path.resolve(process.cwd(), "uploads");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, uploadsDir),
+    filename: (_req, file, cb) => {
+      const safeBase = file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+      cb(null, `${Date.now()}-${safeBase}`);
+    },
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (!file.mimetype.startsWith("image/")) {
+      return cb(new Error("Only image files are allowed"));
+    }
+    cb(null, true);
+  },
+});
 
 export async function registerRoutes(
   httpServer: Server,
@@ -50,6 +76,17 @@ export async function registerRoutes(
     res.json(user);
   });
 
+  // Serve uploaded images
+  app.use("/uploads", express.static(uploadsDir));
+
+  // Image upload (multipart)
+  app.post(api.products.upload.path, upload.single("image"), (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({ message: "No image file provided" });
+    }
+    res.json({ url: `/uploads/${req.file.filename}` });
+  });
+
   // Products
   app.get(api.products.list.path, async (req, res) => {
     const allProducts = await storage.getProducts();
@@ -62,6 +99,22 @@ export async function registerRoutes(
       return res.status(404).json({ message: 'Product not found' });
     }
     res.json(product);
+  });
+
+  app.post(api.products.create.path, async (req, res) => {
+    try {
+      const input = api.products.create.input.parse(req.body);
+      const product = await storage.createProduct(input);
+      res.status(201).json(product);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
   });
 
   // Transactions

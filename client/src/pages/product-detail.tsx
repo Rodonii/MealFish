@@ -102,7 +102,7 @@ export default function ProductDetail() {
     <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full">
       <Link href="/products" className="inline-flex items-center text-muted-foreground hover:text-primary transition-colors mb-8 group">
         <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
-        Back to inventory
+        Back to Menu
       </Link>
 
       <div className="bg-white rounded-[2.5rem] shadow-xl border border-border/60 overflow-hidden">

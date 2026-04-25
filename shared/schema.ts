@@ -20,6 +20,11 @@ export const products = pgTable("products", {
   nutrition: text("nutrition").notNull().default(""), // JSON object as string
 });
 
+export const settings = pgTable("settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+});
+
 export const transactions = pgTable("transactions", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),

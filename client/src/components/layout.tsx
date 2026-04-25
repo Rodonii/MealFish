@@ -1,6 +1,8 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { Award, QrCode, History, LogOut, Package, Sun, Moon } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@shared/routes";
+import { Award, QrCode, History, LogOut, Package, Sun, Moon, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { useTheme } from "@/hooks/use-theme";
@@ -10,12 +12,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const { theme, toggleTheme } = useTheme();
   const [location] = useLocation();
 
+  const { data: settings } = useQuery<{ logoUrl: string | null }>({
+    queryKey: [api.settings.get.path],
+    enabled: !!user,
+  });
+
   if (!user) return <>{children}</>;
 
   const navItems = [
     { href: "/products", label: "Products", icon: Package },
     { href: "/history", label: "History", icon: History },
+    ...(user.isAdmin ? [{ href: "/branding", label: "Branding", icon: ImageIcon }] : []),
   ];
+
+  const logoUrl = settings?.logoUrl;
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f8fafc] dark:bg-slate-950">
@@ -24,9 +34,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <div className="flex justify-between items-center h-20">
             {/* Logo */}
             <Link href="/products" className="flex items-center gap-2 group">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-blue-500 flex items-center justify-center text-white shadow-lg shadow-primary/25 group-hover:scale-105 transition-transform duration-300">
-                <QrCode className="w-5 h-5" />
-              </div>
+              {logoUrl ? (
+                <div className="w-10 h-10 rounded-xl overflow-hidden bg-white shadow-lg shadow-primary/10 group-hover:scale-105 transition-transform duration-300 border border-border">
+                  <img src={logoUrl} alt="Store logo" className="w-full h-full object-cover" data-testid="img-store-logo" />
+                </div>
+              ) : (
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-blue-500 flex items-center justify-center text-white shadow-lg shadow-primary/25 group-hover:scale-105 transition-transform duration-300">
+                  <QrCode className="w-5 h-5" />
+                </div>
+              )}
               <span className="font-display font-bold text-xl tracking-tight text-foreground">
                 Fish<span className="text-primary">Til</span>
               </span>

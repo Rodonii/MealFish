@@ -140,6 +140,28 @@ export async function registerRoutes(
     }
   });
 
+  // Settings (branding)
+  app.get(api.settings.get.path, async (_req, res) => {
+    const logoUrl = await storage.getSetting("logoUrl");
+    res.json({ logoUrl });
+  });
+
+  app.post(api.settings.setLogo.path, requireAdmin, async (req, res) => {
+    try {
+      const input = api.settings.setLogo.input.parse(req.body);
+      await storage.setSetting("logoUrl", input.logoUrl);
+      res.json({ logoUrl: input.logoUrl });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
   // Transactions
   app.post(api.transactions.purchase.path, async (req, res) => {
     try {

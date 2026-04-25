@@ -13,6 +13,7 @@ import Login from "./pages/login";
 import Products from "./pages/products";
 import ProductDetail from "./pages/product-detail";
 import NewProduct from "./pages/new-product";
+import Branding from "./pages/branding";
 import History from "./pages/history";
 
 function ProtectedRoute({ component: Component, ...rest }: { component: any, path: string }) {
@@ -46,6 +47,9 @@ function Router() {
         </Route>
         <Route path="/products/:id">
           {() => <ProtectedRoute component={ProductDetail} path="/products/:id" />}
+        </Route>
+        <Route path="/branding">
+          {() => <ProtectedRoute component={Branding} path="/branding" />}
         </Route>
         <Route path="/history">
           {() => <ProtectedRoute component={History} path="/history" />}

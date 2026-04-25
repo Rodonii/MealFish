@@ -75,6 +75,24 @@ export const api = {
       },
     },
   },
+  settings: {
+    get: {
+      method: 'GET' as const,
+      path: '/api/settings' as const,
+      responses: {
+        200: z.object({ logoUrl: z.string().nullable() }),
+      },
+    },
+    setLogo: {
+      method: 'POST' as const,
+      path: '/api/settings/logo' as const,
+      input: z.object({ logoUrl: z.string().min(1) }),
+      responses: {
+        200: z.object({ logoUrl: z.string() }),
+        400: errorSchemas.validation,
+      },
+    },
+  },
   transactions: {
     purchase: {
       method: 'POST' as const,

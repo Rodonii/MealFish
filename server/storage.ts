@@ -3,6 +3,7 @@ import {
   users,
   products,
   transactions,
+  settings,
   type User,
   type InsertUser,
   type Product,
@@ -25,6 +26,9 @@ export interface IStorage {
   
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
   getUserTransactions(userId: number): Promise<Transaction[]>;
+
+  getSetting(key: string): Promise<string | null>;
+  setSetting(key: string, value: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -89,6 +93,18 @@ export class DatabaseStorage implements IStorage {
       .from(transactions)
       .where(eq(transactions.userId, userId))
       .orderBy(transactions.createdAt); // We might need to add asc/desc but default is fine
+  }
+
+  async getSetting(key: string): Promise<string | null> {
+    const [row] = await db.select().from(settings).where(eq(settings.key, key));
+    return row?.value ?? null;
+  }
+
+  async setSetting(key: string, value: string): Promise<void> {
+    await db
+      .insert(settings)
+      .values({ key, value })
+      .onConflictDoUpdate({ target: settings.key, set: { value } });
   }
 }
 

@@ -98,9 +98,6 @@ export default function Products() {
                     <p className="text-sm text-muted-foreground line-clamp-2 mb-4 flex-1">
                       {product.description}
                     </p>
-                    <p className="text-xs text-muted-foreground line-clamp-2 mb-4 flex-1">
-                      {(product.ingredients || "").slice(0, 120)}
-                    </p>
                     
                     <div className="flex items-center justify-between pt-4 border-t border-border/50">
                       <span className="text-xs font-semibold text-accent flex items-center gap-1">

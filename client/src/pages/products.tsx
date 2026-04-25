@@ -2,7 +2,7 @@ import { useProducts } from "@/hooks/use-products";
 import { formatPrice } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
-import { QrCode, Loader2, Plus } from "lucide-react";
+import { QrCode, Loader2, Plus, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function Products() {
@@ -44,8 +44,8 @@ export default function Products() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
       <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-display font-bold text-foreground">Available Products</h1>
-          <p className="text-muted-foreground mt-2 text-lg">Scan to purchase and earn points instantly.</p>
+          <h1 className="text-4xl font-display font-bold text-foreground">Available Meals</h1>
+          <p className="text-muted-foreground mt-2 text-lg">Purchase using e-wallet and earn points instantly.</p>
         </div>
       </div>
 
@@ -53,7 +53,7 @@ export default function Products() {
         <div className="text-center py-20 bg-white rounded-3xl border border-dashed shadow-sm">
           <Package className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-foreground">No products found</h3>
-          <p className="text-muted-foreground mt-1">Check back later for new inventory.</p>
+          <p className="text-muted-foreground mt-1">Check back later for new meal.</p>
         </div>
       ) : (
         <motion.div 
@@ -67,9 +67,7 @@ export default function Products() {
               <Link href={`/products/${product.id}`}>
                 <div className="group h-full bg-white rounded-3xl p-4 border border-border shadow-sm hover:shadow-xl hover:border-primary/30 transition-all duration-300 cursor-pointer flex flex-col">
                   {/* Image Container */}
-                  <div className="aspect-square rounded-2xl overflow-hidden bg-secondary relative mb-5">
-                    {/* Placeholder image using Unsplash */}
-                    {/* generic clean product box placeholder */}
+                    <div className="aspect-square rounded-2xl overflow-hidden bg-secondary relative mb-5">
                     <img 
                       src={product.imageUrl || "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&h=500&fit=crop"} 
                       alt={product.name}
@@ -90,11 +88,14 @@ export default function Products() {
                     <p className="text-sm text-muted-foreground line-clamp-2 mb-4 flex-1">
                       {product.description}
                     </p>
+                    <p className="text-xs text-muted-foreground line-clamp-2 mb-4 flex-1">
+                      {(product.ingredients || "").slice(0, 120)}
+                    </p>
                     
                     <div className="flex items-center justify-between pt-4 border-t border-border/50">
                       <span className="text-xs font-semibold text-accent flex items-center gap-1">
                         <Plus className="w-3 h-3" />
-                        {Math.floor(product.price / 100) * 5} pts
+                        {Math.floor(product.price / 100) * 0.30} pts
                       </span>
                       <Button variant="ghost" size="sm" className="rounded-full bg-primary/5 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
                         <QrCode className="w-4 h-4 mr-2" />

@@ -92,8 +92,8 @@ export default function ProductDetail() {
     }
   };
 
-  const ingredients = parseJsonSafe(product.ingredients || "", []);
-  const nutrition = parseJsonSafe(product.nutrition || "", {});
+  const ingredients = parseJsonSafe((product as any).ingredients || "", []);
+  const nutrition = parseJsonSafe((product as any).nutrition || "", {});
 
   const pointsToEarn = Math.floor(product.price / 100) * 5;
   const scanUrl = `${window.location.origin}/products/${product.id}`;

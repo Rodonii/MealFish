@@ -24,7 +24,7 @@ export default function Login() {
     try {
       await login(username, password);
       setLocation("/products");
-      toast({ title: "Welcome back!", description: "Successfully logged in." });
+      toast({ title: "Welcome Back Tropa!", description: "Andito ka ulit!." });
     } catch (error: any) {
       toast({ 
         title: "Login failed", 
@@ -51,10 +51,10 @@ export default function Login() {
               <QrCode className="w-8 h-8 transform rotate-6" />
             </div>
             <h1 className="text-3xl font-display font-bold text-foreground tracking-tight">
-              Welcome to <span className="text-gradient">Nasukatsu</span>
+              Welcome to <span className="text-gradient">FishTil</span>
             </h1>
             <p className="mt-3 text-muted-foreground">
-              Scan products, earn points, and unlock rewards.
+             (ANONG LALAGAY KO DITO?)
             </p>
           </div>
 
@@ -94,7 +94,7 @@ export default function Login() {
               className="w-full h-14 rounded-xl text-lg font-semibold bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-600/90 shadow-lg shadow-primary/25 transition-all hover:scale-[1.02] active:scale-[0.98]"
               disabled={isLoggingIn}
             >
-              {isLoggingIn ? "Connecting..." : "Get Started"}
+              {isLoggingIn ? "Connecting..." : "LEZGO!"}
               {!isLoggingIn && <ArrowRight className="ml-2 w-5 h-5" />}
             </Button>
           </form>

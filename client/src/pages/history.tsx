@@ -50,7 +50,7 @@ export default function History() {
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-[2rem] p-12 text-center border shadow-sm"
+          className="bg-card rounded-[2rem] p-12 text-center border shadow-sm"
         >
           <div className="w-20 h-20 bg-secondary rounded-full flex items-center justify-center mx-auto mb-6">
             <Receipt className="w-10 h-10 text-muted-foreground" />
@@ -82,7 +82,7 @@ export default function History() {
               <motion.div 
                 key={tx.id} 
                 variants={item}
-                className="bg-white rounded-2xl p-5 border border-border shadow-sm hover:shadow-md transition-shadow flex flex-col sm:flex-row sm:items-center gap-4 group"
+                className="bg-card rounded-2xl p-5 border border-border shadow-sm hover:shadow-md transition-shadow flex flex-col sm:flex-row sm:items-center gap-4 group"
               >
                 {/* Product Icon/Image */}
                 <div className="w-16 h-16 rounded-xl bg-secondary overflow-hidden shrink-0 hidden sm:block">

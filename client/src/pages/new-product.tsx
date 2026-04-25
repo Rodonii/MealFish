@@ -147,7 +147,7 @@ export default function NewProduct() {
         <p className="text-muted-foreground mt-2 text-lg">Upload an image and fill in the details.</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-900 rounded-3xl border border-border shadow-sm p-6 sm:p-8 space-y-6">
+      <form onSubmit={handleSubmit} className="bg-card rounded-3xl border border-border shadow-sm p-6 sm:p-8 space-y-6">
         {/* Image uploader */}
         <div>
           <Label className="text-base font-semibold mb-3 block">Product Image</Label>

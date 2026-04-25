@@ -105,7 +105,7 @@ export default function ProductDetail() {
         Back to Menu
       </Link>
 
-      <div className="bg-white rounded-[2.5rem] shadow-xl border border-border/60 overflow-hidden">
+      <div className="bg-card rounded-[2.5rem] shadow-xl border border-border/60 overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-2">
           
           {/* Left: Product Details */}
@@ -217,7 +217,7 @@ export default function ProductDetail() {
                 <p className="text-muted-foreground">Point your camera at the QR code below</p>
               </div>
 
-              <div className="bg-white p-6 rounded-3xl shadow-lg border border-border/50 mb-10 w-64 h-64 flex items-center justify-center relative group">
+              <div className="bg-white p-6 rounded-3xl shadow-lg border border-border/50 mb-10 w-64 h-64 flex items-center justify-center relative group dark:bg-white">
                 <QRCode 
                   value={scanUrl} 
                   size={200}

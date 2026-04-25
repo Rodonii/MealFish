@@ -35,7 +35,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f8fafc] px-4 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4 relative overflow-hidden">
       {/* Abstract Background Elements */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/20 blur-[100px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-accent/20 blur-[100px] pointer-events-none" />
@@ -45,7 +45,7 @@ export default function Login() {
         transition={{ duration: 0.5, ease: "easeOut" }}
         className="w-full max-w-md"
       >
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 p-8 sm:p-12 relative z-10">
+        <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 dark:border-slate-700/40 p-8 sm:p-12 relative z-10">
           <div className="text-center mb-10">
             <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-blue-500 flex items-center justify-center text-white shadow-xl shadow-primary/30 mb-6 transform -rotate-6">
               <QrCode className="w-8 h-8 transform rotate-6" />
@@ -69,7 +69,7 @@ export default function Login() {
                 placeholder="Enter your username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="h-14 px-5 rounded-xl border-2 bg-white focus-visible:ring-primary/20 focus-visible:border-primary text-base transition-all"
+                className="h-14 px-5 rounded-xl border-2 bg-card focus-visible:ring-primary/20 focus-visible:border-primary text-base transition-all"
                 disabled={isLoggingIn}
               />
             </div>
@@ -84,7 +84,7 @@ export default function Login() {
                 placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="h-14 px-5 rounded-xl border-2 bg-white focus-visible:ring-primary/20 focus-visible:border-primary text-base transition-all"
+                className="h-14 px-5 rounded-xl border-2 bg-card focus-visible:ring-primary/20 focus-visible:border-primary text-base transition-all"
                 disabled={isLoggingIn}
               />
             </div>

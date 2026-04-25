@@ -106,7 +106,7 @@ export default function Branding() {
         <p className="text-muted-foreground mt-2 text-lg">Upload your store logo. It will appear in the header for everyone.</p>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-border shadow-sm p-6 sm:p-8 space-y-6">
+      <div className="bg-card rounded-3xl border border-border shadow-sm p-6 sm:p-8 space-y-6">
         <input
           ref={fileInputRef}
           type="file"

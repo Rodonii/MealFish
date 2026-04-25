@@ -60,7 +60,7 @@ export default function Products() {
       </div>
 
       {products.length === 0 ? (
-        <div className="text-center py-20 bg-white rounded-3xl border border-dashed shadow-sm">
+        <div className="text-center py-20 bg-card rounded-3xl border border-dashed shadow-sm">
           <Package className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-foreground">No products found</h3>
           <p className="text-muted-foreground mt-1">Check back later for new meal.</p>
@@ -75,7 +75,7 @@ export default function Products() {
           {products.map((product) => (
             <motion.div key={product.id} variants={item}>
               <Link href={`/products/${product.id}`}>
-                <div className="group h-full bg-white rounded-3xl p-4 border border-border shadow-sm hover:shadow-xl hover:border-primary/30 transition-all duration-300 cursor-pointer flex flex-col">
+                <div className="group h-full bg-card rounded-3xl p-4 border border-border shadow-sm hover:shadow-xl hover:border-primary/30 transition-all duration-300 cursor-pointer flex flex-col">
                   {/* Image Container */}
                     <div className="aspect-square rounded-2xl overflow-hidden bg-secondary relative mb-5">
                     <img 
@@ -85,7 +85,7 @@ export default function Products() {
                     />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300" />
                     
-                    <div className="absolute top-3 right-3 bg-white/90 backdrop-blur px-3 py-1 rounded-full shadow-sm">
+                    <div className="absolute top-3 right-3 bg-white/90 dark:bg-slate-900/80 backdrop-blur px-3 py-1 rounded-full shadow-sm">
                       <span className="font-bold text-sm text-foreground">{formatPrice(product.price)}</span>
                     </div>
                   </div>

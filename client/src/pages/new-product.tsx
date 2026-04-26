@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Upload, Loader2, ImagePlus, ArrowLeft, X, ShieldAlert } from "lucide-react";
 import { Link } from "wouter";
+import { AddOnEditor, type AddOn } from "@/components/add-on-editor";
 
 export default function NewProduct() {
   const [, setLocation] = useLocation();
@@ -40,6 +41,7 @@ export default function NewProduct() {
   const [imageUrl, setImageUrl] = React.useState("");
   const [previewUrl, setPreviewUrl] = React.useState("");
   const [uploading, setUploading] = React.useState(false);
+  const [addOns, setAddOns] = React.useState<AddOn[]>([]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -97,6 +99,7 @@ export default function NewProduct() {
         imageUrl,
         ingredients: ingredientsArr.length ? JSON.stringify(ingredientsArr) : "",
         nutrition: "",
+        addOns: JSON.stringify(addOns),
       };
       const res = await apiRequest("POST", api.products.create.path, payload);
       return await res.json();
@@ -247,6 +250,15 @@ export default function NewProduct() {
             className="mt-2"
             data-testid="input-ingredients"
           />
+        </div>
+
+        {/* Add-ons / side dishes */}
+        <div>
+          <Label className="text-base font-semibold mb-1 block">Add-ons / Side dishes</Label>
+          <p className="text-sm text-muted-foreground mb-3">
+            Optional extras the customer can add at checkout. Each one bumps the total and the points earned.
+          </p>
+          <AddOnEditor value={addOns} onChange={setAddOns} testIdPrefix="new-addon" />
         </div>
 
         <div className="flex justify-end gap-3 pt-2">

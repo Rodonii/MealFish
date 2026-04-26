@@ -36,6 +36,7 @@ export interface IStorage {
   getProducts(): Promise<Product[]>;
   getProduct(id: number): Promise<Product | undefined>;
   createProduct(product: InsertProduct): Promise<Product>;
+  updateProduct(id: number, fields: Partial<InsertProduct>): Promise<Product | undefined>;
 
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
   getUserTransactions(userId: number): Promise<Transaction[]>;
@@ -48,6 +49,7 @@ export interface IStorage {
     productId: number;
     amount: number;
     pointsToEarn: number;
+    selectedAddOns?: string;
   }): Promise<PaymentRequest>;
   getPaymentRequest(id: number): Promise<PaymentRequest | undefined>;
   listPendingPaymentRequests(): Promise<PendingPaymentSummary[]>;
@@ -112,6 +114,18 @@ export class DatabaseStorage implements IStorage {
     return product;
   }
 
+  async updateProduct(id: number, fields: Partial<InsertProduct>): Promise<Product | undefined> {
+    if (Object.keys(fields).length === 0) {
+      return await this.getProduct(id);
+    }
+    const [updated] = await db
+      .update(products)
+      .set(fields)
+      .where(eq(products.id, id))
+      .returning();
+    return updated;
+  }
+
   async createTransaction(insertTransaction: InsertTransaction): Promise<Transaction> {
     const [transaction] = await db
       .insert(transactions)
@@ -145,6 +159,7 @@ export class DatabaseStorage implements IStorage {
     productId: number;
     amount: number;
     pointsToEarn: number;
+    selectedAddOns?: string;
   }): Promise<PaymentRequest> {
     // Try a few times to avoid the (extremely unlikely) reference-code collision
     for (let attempt = 0; attempt < 5; attempt++) {
@@ -157,6 +172,7 @@ export class DatabaseStorage implements IStorage {
             productId: input.productId,
             amount: input.amount,
             pointsToEarn: input.pointsToEarn,
+            selectedAddOns: input.selectedAddOns ?? "[]",
             referenceCode,
             status: "pending",
           })
@@ -225,6 +241,7 @@ export class DatabaseStorage implements IStorage {
       productId: existing.productId,
       amount: existing.amount,
       pointsEarned: existing.pointsToEarn,
+      selectedAddOns: existing.selectedAddOns ?? "[]",
     });
 
     const updatedUser = await this.updateUserPoints(

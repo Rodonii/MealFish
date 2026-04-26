@@ -18,6 +18,9 @@ import {
   Wallet,
   Hash,
   XCircle,
+  Plus,
+  Settings,
+  Save,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -25,7 +28,22 @@ import { Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { api, buildUrl } from "@shared/routes";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { PaymentRequest } from "@shared/schema";
+import type { PaymentRequest, Product } from "@shared/schema";
+import { AddOnEditor, type AddOn } from "@/components/add-on-editor";
+
+const POINTS_RATE = 0.30; // pts per peso
+
+function parseAddOns(jsonString: string | null | undefined): AddOn[] {
+  try {
+    const parsed = JSON.parse(jsonString || "[]");
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((a: any) => a && typeof a.name === "string" && typeof a.price === "number")
+      .map((a: any) => ({ name: a.name, price: Math.max(0, Math.floor(a.price)) }));
+  } catch {
+    return [];
+  }
+}
 
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
@@ -37,6 +55,9 @@ export default function ProductDetail() {
   const [paymentRequestId, setPaymentRequestId] = React.useState<number | null>(null);
   const [referenceCode, setReferenceCode] = React.useState<string>("");
   const [resolved, setResolved] = React.useState(false);
+  const [selectedAddOns, setSelectedAddOns] = React.useState<AddOn[]>([]);
+  const [adminEditing, setAdminEditing] = React.useState(false);
+  const [draftAddOns, setDraftAddOns] = React.useState<AddOn[]>([]);
 
   const { data: product, isLoading: productLoading } = useProduct(Number(id));
   const { data: settings } = useQuery<{ logoUrl: string | null; paymentQrUrl: string | null }>({
@@ -52,8 +73,8 @@ export default function ProductDetail() {
   });
 
   const startPaymentMutation = useMutation({
-    mutationFn: async (productId: number) => {
-      const res = await apiRequest("POST", api.payments.create.path, { productId });
+    mutationFn: async ({ productId, addOns }: { productId: number; addOns: AddOn[] }) => {
+      const res = await apiRequest("POST", api.payments.create.path, { productId, addOns });
       return (await res.json()) as PaymentRequest;
     },
     onSuccess: (req) => {
@@ -63,6 +84,26 @@ export default function ProductDetail() {
     },
     onError: (err: any) => {
       toast({ title: "Could not start payment", description: err?.message || "Please try again.", variant: "destructive" });
+    },
+  });
+
+  const updateAddOnsMutation = useMutation({
+    mutationFn: async (next: AddOn[]) => {
+      if (!product) return;
+      const url = buildUrl(api.products.update.path, { id: product.id });
+      const res = await apiRequest("PATCH", url, { addOns: JSON.stringify(next) });
+      return (await res.json()) as Product;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
+      if (product) {
+        queryClient.invalidateQueries({ queryKey: [api.products.get.path, product.id] });
+      }
+      toast({ title: "Add-ons saved", description: "Customers will now see the updated list." });
+      setAdminEditing(false);
+    },
+    onError: (err: any) => {
+      toast({ title: "Could not save add-ons", description: err?.message || "Try again.", variant: "destructive" });
     },
   });
 
@@ -97,6 +138,8 @@ export default function ProductDetail() {
     setPaymentRequestId(null);
     setReferenceCode("");
     setResolved(false);
+    setSelectedAddOns([]);
+    setAdminEditing(false);
   }, [id]);
 
   React.useEffect(() => {
@@ -123,6 +166,8 @@ export default function ProductDetail() {
     );
   }
 
+  const productAddOns = parseAddOns((product as any).addOns);
+
   // Demo path (no payment QR uploaded by admin)
   const handleDemoPurchase = async () => {
     if (!user || isProcessing || cooldownRemaining > 0) return;
@@ -147,13 +192,27 @@ export default function ProductDetail() {
   const handleStartPayment = () => {
     if (!user) return;
     queryClient.removeQueries({ queryKey: ["/api/payments/status"] });
-    startPaymentMutation.mutate(product.id);
+    startPaymentMutation.mutate({ productId: product.id, addOns: selectedAddOns });
   };
 
   const handleStartOver = () => {
     setPaymentRequestId(null);
     setReferenceCode("");
     setResolved(false);
+  };
+
+  const toggleAddOn = (addOn: AddOn) => {
+    const isSelected = selectedAddOns.some((a) => a.name === addOn.name && a.price === addOn.price);
+    if (isSelected) {
+      setSelectedAddOns(selectedAddOns.filter((a) => !(a.name === addOn.name && a.price === addOn.price)));
+    } else {
+      setSelectedAddOns([...selectedAddOns, addOn]);
+    }
+  };
+
+  const beginAdminEdit = () => {
+    setDraftAddOns(productAddOns);
+    setAdminEditing(true);
   };
 
   const parseJsonSafe = (jsonString: string, fallback: any = []) => {
@@ -163,16 +222,21 @@ export default function ProductDetail() {
   const ingredients = parseJsonSafe((product as any).ingredients || "", []);
   const nutrition = parseJsonSafe((product as any).nutrition || "", {});
 
-  const pointsToEarn = Math.floor((product.price / 100) * 0.30);
+  const addOnTotal = selectedAddOns.reduce((sum, a) => sum + a.price, 0);
+  const total = product.price + addOnTotal;
+  const pointsToEarn = Math.floor((total / 100) * POINTS_RATE);
+  const basePoints = Math.floor((product.price / 100) * POINTS_RATE);
+
   const scanUrl = `${window.location.origin}/products/${product.id}`;
   const paymentQrUrl = settings?.paymentQrUrl || "";
   const status = pollData?.request.status ?? null;
   const isPaymentActive = paymentRequestId != null;
   const isConfirmed = status === "confirmed";
   const isRejected = status === "rejected";
-  // Show the waiting screen as soon as the request exists, even before
-  // the first status poll has returned. Only hide it once we know it's resolved.
   const isWaiting = isPaymentActive && !isConfirmed && !isRejected;
+
+  // Add-ons from the locked-in payment request (for the waiting/confirmed view)
+  const lockedAddOns = parseAddOns((pollData?.request as any)?.selectedAddOns);
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full">
@@ -207,7 +271,7 @@ export default function ProductDetail() {
               <div className="flex flex-wrap items-center gap-3 mb-4">
                 <span className="px-3 py-1 bg-primary/10 text-primary text-sm font-bold rounded-full">{formatPrice(product.price)}</span>
                 <span className="px-3 py-1 bg-accent/10 text-accent text-sm font-bold rounded-full flex items-center gap-1">
-                  <Zap className="w-3 h-3" /> Earn {pointsToEarn} pts
+                  <Zap className="w-3 h-3" /> Earn {basePoints} pts
                 </span>
               </div>
 
@@ -262,10 +326,69 @@ export default function ProductDetail() {
             </motion.div>
           </div>
 
-          {/* Right: Payment / QR */}
-          <div className="p-8 lg:p-12 bg-slate-50/50 dark:bg-slate-900/40 flex flex-col items-center justify-center relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-accent/5 rounded-full blur-3xl" />
+          {/* Right: Add-ons + Payment / QR */}
+          <div className="p-8 lg:p-12 bg-slate-50/50 dark:bg-slate-900/40 flex flex-col items-stretch justify-start relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-accent/5 rounded-full blur-3xl pointer-events-none" />
+
+            {/* Admin: manage add-ons */}
+            {user?.isAdmin && !isWaiting && !isConfirmed && (
+              <div className="relative z-10 mb-6 bg-card/80 backdrop-blur rounded-2xl border border-border p-4">
+                <div className="flex items-center justify-between gap-3 mb-2">
+                  <div>
+                    <h4 className="font-bold text-foreground flex items-center gap-2">
+                      <Settings className="w-4 h-4 text-primary" /> Add-ons (admin)
+                    </h4>
+                    <p className="text-xs text-muted-foreground">
+                      {productAddOns.length === 0
+                        ? "No add-ons yet — add some to give customers extras."
+                        : `${productAddOns.length} add-on${productAddOns.length === 1 ? "" : "s"} configured`}
+                    </p>
+                  </div>
+                  {!adminEditing && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={beginAdminEdit}
+                      data-testid="button-edit-addons"
+                    >
+                      Edit
+                    </Button>
+                  )}
+                </div>
+
+                {adminEditing && (
+                  <div className="space-y-3 pt-2">
+                    <AddOnEditor value={draftAddOns} onChange={setDraftAddOns} testIdPrefix="admin-addon" />
+                    <div className="flex justify-end gap-2 pt-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setAdminEditing(false)}
+                        data-testid="button-addons-cancel"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => updateAddOnsMutation.mutate(draftAddOns)}
+                        disabled={updateAddOnsMutation.isPending}
+                        data-testid="button-addons-save"
+                      >
+                        {updateAddOnsMutation.isPending ? (
+                          <><Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> Saving...</>
+                        ) : (
+                          <><Save className="w-4 h-4 mr-1.5" /> Save add-ons</>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
@@ -310,18 +433,85 @@ export default function ProductDetail() {
                   <motion.div
                     key="ready"
                     initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                    className="w-full flex flex-col items-center"
+                    className="w-full flex flex-col items-stretch"
                   >
                     <div className="text-center mb-6">
                       <h3 className="text-2xl font-display font-bold text-foreground mb-2">Pay with E-Wallet</h3>
-                      <p className="text-muted-foreground">Tap below to start. The owner will confirm once your payment lands.</p>
+                      <p className="text-muted-foreground">Add any extras you want, then start the payment.</p>
                     </div>
-                    <div className="w-full mb-6 rounded-2xl border border-primary/20 bg-primary/5 px-5 py-4 flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                        <Wallet className="w-4 h-4 text-primary" /> Amount
+
+                    {/* Add-on picker */}
+                    {productAddOns.length > 0 && (
+                      <div className="w-full mb-5">
+                        <h4 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+                          <Plus className="w-4 h-4 text-primary" /> Add-ons & side dishes
+                        </h4>
+                        <div className="space-y-2" data-testid="addon-options">
+                          {productAddOns.map((addOn, idx) => {
+                            const isSelected = selectedAddOns.some(
+                              (a) => a.name === addOn.name && a.price === addOn.price,
+                            );
+                            return (
+                              <button
+                                type="button"
+                                key={`${addOn.name}-${idx}`}
+                                onClick={() => toggleAddOn(addOn)}
+                                className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border-2 transition-all text-left ${
+                                  isSelected
+                                    ? "border-primary bg-primary/10 shadow-md"
+                                    : "border-border bg-card hover:border-primary/40 hover:bg-primary/5"
+                                }`}
+                                data-testid={`button-addon-${idx}`}
+                              >
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 ${
+                                    isSelected ? "border-primary bg-primary" : "border-border bg-card"
+                                  }`}>
+                                    {isSelected && <CheckCircle2 className="w-4 h-4 text-white" />}
+                                  </div>
+                                  <span className="font-semibold text-foreground truncate">{addOn.name}</span>
+                                </div>
+                                <span className={`shrink-0 text-sm font-bold ${isSelected ? "text-primary" : "text-muted-foreground"}`}>
+                                  +{formatPrice(addOn.price)}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
-                      <div className="text-2xl font-display font-bold text-primary">{formatPrice(product.price)}</div>
+                    )}
+
+                    {/* Running total */}
+                    <div className="w-full mb-3 rounded-2xl border border-border bg-card px-5 py-3 space-y-1.5">
+                      <div className="flex items-center justify-between text-sm text-muted-foreground">
+                        <span>Base price</span>
+                        <span>{formatPrice(product.price)}</span>
+                      </div>
+                      {selectedAddOns.length > 0 && (
+                        <>
+                          {selectedAddOns.map((a, idx) => (
+                            <div key={`${a.name}-${idx}`} className="flex items-center justify-between text-sm text-muted-foreground">
+                              <span className="truncate pr-2">+ {a.name}</span>
+                              <span>{formatPrice(a.price)}</span>
+                            </div>
+                          ))}
+                          <div className="border-t border-border pt-1.5" />
+                        </>
+                      )}
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold text-foreground">Total</span>
+                        <span className="text-2xl font-display font-bold text-primary" data-testid="text-running-total">
+                          {formatPrice(total)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">Points you'll earn</span>
+                        <span className="text-sm font-bold text-accent flex items-center gap-1" data-testid="text-running-points">
+                          <Zap className="w-3 h-3" /> {pointsToEarn} pts
+                        </span>
+                      </div>
                     </div>
+
                     <Button
                       onClick={handleStartPayment}
                       disabled={startPaymentMutation.isPending}
@@ -349,11 +539,32 @@ export default function ProductDetail() {
                       <p className="text-muted-foreground">Open your e-wallet, scan the QR, then send the exact amount.</p>
                     </div>
 
-                    <div className="w-full mb-4 rounded-2xl border border-primary/20 bg-primary/5 px-5 py-4 flex items-center justify-between" data-testid="banner-amount">
-                      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                        <Wallet className="w-4 h-4 text-primary" /> Amount to pay
+                    <div className="w-full mb-4 rounded-2xl border border-primary/20 bg-primary/5 px-5 py-4" data-testid="banner-amount">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                          <Wallet className="w-4 h-4 text-primary" /> Amount to pay
+                        </div>
+                        <div className="text-2xl font-display font-bold text-primary" data-testid="text-amount">
+                          {formatPrice(pollData?.request.amount ?? total)}
+                        </div>
                       </div>
-                      <div className="text-2xl font-display font-bold text-primary" data-testid="text-amount">{formatPrice(product.price)}</div>
+                      {(lockedAddOns.length > 0 || selectedAddOns.length > 0) && (
+                        <div className="mt-2 pt-2 border-t border-primary/15 space-y-0.5">
+                          <div className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium mb-1">
+                            Order
+                          </div>
+                          <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>{product.name}</span>
+                            <span>{formatPrice(product.price)}</span>
+                          </div>
+                          {(lockedAddOns.length > 0 ? lockedAddOns : selectedAddOns).map((a, idx) => (
+                            <div key={`${a.name}-${idx}`} className="flex justify-between text-xs text-muted-foreground">
+                              <span className="truncate pr-2">+ {a.name}</span>
+                              <span>{formatPrice(a.price)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     <div className="bg-white p-6 rounded-3xl shadow-lg border border-border/50 mb-4 w-64 h-64 flex items-center justify-center dark:bg-white">

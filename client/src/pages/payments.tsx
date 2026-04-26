@@ -18,8 +18,19 @@ import {
   Hash,
   User as UserIcon,
   Package,
+  Plus,
 } from "lucide-react";
 import type { PaymentRequest } from "@shared/schema";
+
+function parseAddOns(jsonString: string | null | undefined): Array<{ name: string; price: number }> {
+  try {
+    const parsed = JSON.parse(jsonString || "[]");
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((a: any) => a && typeof a.name === "string" && typeof a.price === "number");
+  } catch {
+    return [];
+  }
+}
 
 interface PendingItem {
   request: PaymentRequest;
@@ -133,6 +144,7 @@ export default function Payments() {
             const id = item.request.id;
             const isBusy = (confirmMutation.isPending && confirmMutation.variables === id)
               || (rejectMutation.isPending && rejectMutation.variables === id);
+            const addOns = parseAddOns((item.request as any).selectedAddOns);
             return (
               <div
                 key={id}
@@ -171,6 +183,22 @@ export default function Payments() {
                     Started {item.request.createdAt ? timeSince(item.request.createdAt) : "just now"} · Earns {item.request.pointsToEarn} pts
                   </div>
                 </div>
+
+                {addOns.length > 0 && (
+                  <div className="mb-5 rounded-2xl bg-secondary/40 border border-border/60 px-4 py-3" data-testid={`addons-${id}`}>
+                    <div className="text-[11px] uppercase tracking-wide text-muted-foreground font-bold flex items-center gap-1.5 mb-2">
+                      <Plus className="w-3 h-3" /> Add-ons ordered
+                    </div>
+                    <div className="space-y-1">
+                      {addOns.map((a, idx) => (
+                        <div key={`${a.name}-${idx}`} className="flex justify-between text-sm" data-testid={`addon-line-${id}-${idx}`}>
+                          <span className="text-foreground truncate pr-2">{a.name}</span>
+                          <span className="text-muted-foreground font-medium">{formatPrice(a.price)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Button

@@ -4,7 +4,7 @@ import { useProducts } from "@/hooks/use-products";
 import { formatPrice } from "@/lib/utils";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
-import { Receipt, Calendar, ArrowUpRight, Zap, Loader2 } from "lucide-react";
+import { Receipt, Calendar, ArrowUpRight, Zap, Loader2, Plus } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 
@@ -78,11 +78,21 @@ export default function History() {
             const date = new Date(tx.createdAt);
             const isValidDate = !isNaN(date.getTime());
 
+            let addOns: Array<{ name: string; price: number }> = [];
+            try {
+              const parsed = JSON.parse((tx as any).selectedAddOns || "[]");
+              if (Array.isArray(parsed)) {
+                addOns = parsed.filter((a: any) => a && typeof a.name === "string" && typeof a.price === "number");
+              }
+            } catch {
+              addOns = [];
+            }
+
             return (
               <motion.div 
                 key={tx.id} 
                 variants={item}
-                className="bg-card rounded-2xl p-5 border border-border shadow-sm hover:shadow-md transition-shadow flex flex-col sm:flex-row sm:items-center gap-4 group"
+                className="bg-card rounded-2xl p-5 border border-border shadow-sm hover:shadow-md transition-shadow flex flex-col sm:flex-row sm:items-start gap-4 group"
               >
                 {/* Product Icon/Image */}
                 <div className="w-16 h-16 rounded-xl bg-secondary overflow-hidden shrink-0 hidden sm:block">
@@ -115,6 +125,26 @@ export default function History() {
                       +{tx.pointsEarned} pts
                     </div>
                   </div>
+
+                  {addOns.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-border/60" data-testid={`tx-addons-${tx.id}`}>
+                      <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-bold flex items-center gap-1 mb-1.5">
+                        <Plus className="w-3 h-3" /> Add-ons
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {addOns.map((a, idx) => (
+                          <span
+                            key={`${a.name}-${idx}`}
+                            className="inline-flex items-center gap-1 text-xs bg-secondary/60 text-foreground px-2 py-0.5 rounded-md border border-border/60"
+                            data-testid={`tx-addon-${tx.id}-${idx}`}
+                          >
+                            {a.name}
+                            <span className="text-muted-foreground">+{formatPrice(a.price)}</span>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="shrink-0 pt-4 border-t sm:border-t-0 sm:pt-0 sm:pl-4 sm:border-l border-border/50">

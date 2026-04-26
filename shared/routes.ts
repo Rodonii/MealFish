@@ -60,10 +60,29 @@ export const api = {
         imageUrl: z.string().min(1),
         ingredients: z.string().optional().default(""),
         nutrition: z.string().optional().default(""),
+        addOns: z.string().optional().default("[]"),
       }),
       responses: {
         201: z.custom<typeof products.$inferSelect>(),
         400: errorSchemas.validation,
+      },
+    },
+    update: {
+      method: 'PATCH' as const,
+      path: '/api/products/:id' as const,
+      input: z.object({
+        name: z.string().min(1).optional(),
+        description: z.string().min(1).optional(),
+        price: z.number().int().positive().optional(),
+        imageUrl: z.string().min(1).optional(),
+        ingredients: z.string().optional(),
+        nutrition: z.string().optional(),
+        addOns: z.string().optional(),
+      }),
+      responses: {
+        200: z.custom<typeof products.$inferSelect>(),
+        400: errorSchemas.validation,
+        404: errorSchemas.notFound,
       },
     },
     upload: {
@@ -135,7 +154,13 @@ export const api = {
     create: {
       method: 'POST' as const,
       path: '/api/payments' as const,
-      input: z.object({ productId: z.number().int().positive() }),
+      input: z.object({
+        productId: z.number().int().positive(),
+        addOns: z
+          .array(z.object({ name: z.string().min(1), price: z.number().int().nonnegative() }))
+          .optional()
+          .default([]),
+      }),
       responses: {
         201: z.custom<typeof paymentRequests.$inferSelect>(),
         400: errorSchemas.validation,

@@ -18,6 +18,7 @@ export const products = pgTable("products", {
   imageUrl: text("image_url").notNull(),
   ingredients: text("ingredients").notNull().default(""), // JSON array as string
   nutrition: text("nutrition").notNull().default(""), // JSON object as string
+  addOns: text("add_ons").notNull().default("[]"), // JSON: [{ name, price }] (price in cents)
 });
 
 export const settings = pgTable("settings", {
@@ -29,8 +30,9 @@ export const transactions = pgTable("transactions", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   productId: integer("product_id").notNull(),
-  amount: integer("amount").notNull(), // in cents
+  amount: integer("amount").notNull(), // in cents (base + add-ons)
   pointsEarned: integer("points_earned").notNull(),
+  selectedAddOns: text("selected_add_ons").notNull().default("[]"), // JSON: [{ name, price }]
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -38,8 +40,9 @@ export const paymentRequests = pgTable("payment_requests", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   productId: integer("product_id").notNull(),
-  amount: integer("amount").notNull(), // in cents, locked at request time
+  amount: integer("amount").notNull(), // in cents, locked at request time (base + add-ons)
   pointsToEarn: integer("points_to_earn").notNull(),
+  selectedAddOns: text("selected_add_ons").notNull().default("[]"), // JSON: [{ name, price }]
   referenceCode: text("reference_code").notNull().unique(),
   status: text("status").notNull().default("pending"), // pending | confirmed | rejected
   transactionId: integer("transaction_id"),

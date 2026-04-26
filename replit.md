@@ -29,13 +29,19 @@ A small storefront where customers scan an owner-uploaded e-wallet QR (GCash / M
 
 ## Schema (`shared/schema.ts`)
 - `users` — id, username (unique), password, points, isAdmin
-- `products` — id, name, description, price (cents), imageUrl, ingredients (JSON string), nutrition (JSON string)
-- `transactions` — id, userId, productId, amount, pointsEarned, createdAt
+- `products` — id, name, description, price (cents), imageUrl, ingredients (JSON string), nutrition (JSON string), addOns (JSON string `[{name,price}]`)
+- `transactions` — id, userId, productId, amount, pointsEarned, selectedAddOns (JSON string), createdAt
 - `settings` — key/value (`logoUrl`, `paymentQrUrl`)
-- `payment_requests` — id, userId, productId, amount, pointsToEarn, referenceCode (unique), status (`pending|confirmed|rejected`), transactionId (set on confirm), createdAt
+- `payment_requests` — id, userId, productId, amount, pointsToEarn, selectedAddOns (JSON string), referenceCode (unique), status (`pending|confirmed|rejected`), transactionId (set on confirm), createdAt
+
+## Add-ons / side dishes
+- Admin sets the catalog per product on the new-product form, or inline on the product detail page (PATCH `/api/products/:id`).
+- Customer ticks the ones they want on the product detail page; the right column shows a running total + points before they start the payment.
+- POST `/api/payments` validates each selected add-on against the product's catalog (exact match on name + price) and recomputes total + points server-side. The selection is locked into the `payment_requests` row and copied into the `transactions` row on confirm.
+- Add-ons are also surfaced in the admin payments inbox (per pending request) and on the customer's history page (chips per transaction).
 
 ## Important behaviors
-- Points formula: `Math.floor(price_in_cents / 100) * 5` (5 points per 100 currency units).
+- Points formula: `Math.floor(total_in_cents / 100 * 0.30)` (0.30 points per peso, e.g. 100 PHP → 30 pts). `total` includes any selected add-ons.
 - All admin-only endpoints check `req.header('x-user-id')` against `users.isAdmin`.
 - `apiRequest` in `client/src/lib/queryClient.ts` auto-attaches the header from localStorage.
 - Uploaded files live in `uploads/` and are served from `/uploads`.

@@ -140,6 +140,29 @@ export async function registerRoutes(
     }
   });
 
+  app.patch(api.products.update.path, requireAdmin, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (!Number.isFinite(id)) {
+        return res.status(400).json({ message: "Invalid product id" });
+      }
+      const input = api.products.update.input.parse(req.body);
+      const updated = await storage.updateProduct(id, input);
+      if (!updated) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+      res.json(updated);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
   // Settings (branding & payment)
   app.get(api.settings.get.path, async (_req, res) => {
     const [logoUrl, paymentQrUrl] = await Promise.all([
@@ -260,12 +283,45 @@ export async function registerRoutes(
       if (!product) {
         return res.status(404).json({ message: "Product not found" });
       }
-      const pointsToEarn = Math.floor((product.price / 100) * 0.30);
+
+      // Parse the product's add-on catalog and validate any selected ones
+      // against it. Each selected add-on must match a catalog entry by
+      // name + price (we don't trust the client to set its own price).
+      let catalog: Array<{ name: string; price: number }> = [];
+      try {
+        const parsed = JSON.parse(product.addOns || "[]");
+        if (Array.isArray(parsed)) {
+          catalog = parsed
+            .filter((a: any) => a && typeof a.name === "string" && typeof a.price === "number")
+            .map((a: any) => ({ name: a.name, price: Math.max(0, Math.floor(a.price)) }));
+        }
+      } catch {
+        catalog = [];
+      }
+
+      const validatedAddOns: Array<{ name: string; price: number }> = [];
+      for (const selected of input.addOns ?? []) {
+        const match = catalog.find(
+          (c) => c.name === selected.name && c.price === selected.price,
+        );
+        if (!match) {
+          return res.status(400).json({
+            message: `Add-on "${selected.name}" is not available for this product.`,
+          });
+        }
+        validatedAddOns.push({ name: match.name, price: match.price });
+      }
+
+      const addOnTotal = validatedAddOns.reduce((sum, a) => sum + a.price, 0);
+      const total = product.price + addOnTotal;
+      const pointsToEarn = Math.floor((total / 100) * 0.30);
+
       const request = await storage.createPaymentRequest({
         userId: req.currentUser.id,
         productId: product.id,
-        amount: product.price,
+        amount: total,
         pointsToEarn,
+        selectedAddOns: JSON.stringify(validatedAddOns),
       });
       res.status(201).json(request);
     } catch (err) {

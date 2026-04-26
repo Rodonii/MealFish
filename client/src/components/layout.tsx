@@ -83,7 +83,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
               <div className="flex items-center gap-1 sm:gap-3 sm:pl-4 sm:border-l">
                 <span
-                  className="text-sm font-medium text-foreground/80 dark:text-muted-foreground max-w-[80px] sm:max-w-none truncate"
+                  className="text-sm font-bold text-foreground dark:text-foreground max-w-[80px] sm:max-w-none truncate"
                   data-testid="text-username"
                   title={user.username}
                 >

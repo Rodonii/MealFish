@@ -72,7 +72,13 @@ export default function Products() {
           animate="show"
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
         >
-          {products.map((product) => (
+          {products.map((product) => {
+            let addOnCount = 0;
+            try {
+              const parsed = JSON.parse((product as any).addOns || "[]");
+              if (Array.isArray(parsed)) addOnCount = parsed.length;
+            } catch { addOnCount = 0; }
+            return (
             <motion.div key={product.id} variants={item}>
               <Link href={`/products/${product.id}`}>
                 <div className="group h-full bg-card rounded-3xl p-4 border border-border shadow-sm hover:shadow-xl hover:border-primary/30 transition-all duration-300 cursor-pointer flex flex-col">
@@ -88,6 +94,15 @@ export default function Products() {
                     <div className="absolute top-3 right-3 bg-white/90 dark:bg-slate-900/80 backdrop-blur px-3 py-1 rounded-full shadow-sm">
                       <span className="font-bold text-sm text-foreground">{formatPrice(product.price)}</span>
                     </div>
+                    {addOnCount > 0 && (
+                      <div
+                        className="absolute top-3 left-3 bg-primary/90 text-white backdrop-blur px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1 text-[11px] font-bold"
+                        data-testid={`badge-addons-${product.id}`}
+                      >
+                        <Plus className="w-3 h-3" />
+                        {addOnCount} add-on{addOnCount === 1 ? "" : "s"}
+                      </div>
+                    )}
                   </div>
 
                   {/* Content */}
@@ -113,7 +128,8 @@ export default function Products() {
                 </div>
               </Link>
             </motion.div>
-          ))}
+            );
+          })}
         </motion.div>
       )}
     </div>

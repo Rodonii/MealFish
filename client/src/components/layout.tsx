@@ -70,31 +70,42 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </nav>
 
             {/* User Profile & Points */}
-            <div className="flex items-center gap-4">
-              <motion.div 
+            <div className="flex items-center gap-2 sm:gap-4">
+              <motion.div
                 key={user.points}
                 initial={{ scale: 1.2, color: "var(--accent)" }}
                 animate={{ scale: 1, color: "inherit" }}
-                className="flex items-center gap-2 px-4 py-2 bg-accent/10 text-accent-foreground rounded-full border border-accent/20 shadow-sm"
+                className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-accent/10 text-accent-foreground rounded-full border border-accent/20 shadow-sm"
               >
                 <Award className="w-4 h-4 text-accent" />
-                <span className="font-bold text-accent">{user.points} pts</span>
+                <span className="font-bold text-accent text-sm sm:text-base">{user.points} pts</span>
               </motion.div>
-              
-              <div className="hidden sm:flex items-center gap-3 pl-4 border-l">
-                <span className="text-sm font-medium text-muted-foreground">
+
+              <div className="flex items-center gap-1 sm:gap-3 sm:pl-4 sm:border-l">
+                <span
+                  className="text-sm font-medium text-muted-foreground max-w-[80px] sm:max-w-none truncate"
+                  data-testid="text-username"
+                  title={user.username}
+                >
                   {user.username}
                 </span>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
+                <Button
+                  variant="ghost"
+                  size="icon"
                   onClick={toggleTheme}
-                  className="hover:text-primary hover:bg-primary/10"
+                  className="hover:text-primary hover:bg-primary/10 h-9 w-9"
                   title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+                  data-testid="button-toggle-theme"
                 >
                   {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
                 </Button>
-                <Button variant="ghost" size="icon" onClick={logout} className="hover:text-destructive hover:bg-destructive/10">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={logout}
+                  className="hover:text-destructive hover:bg-destructive/10 h-9 w-9"
+                  data-testid="button-logout"
+                >
                   <LogOut className="w-4 h-4" />
                 </Button>
               </div>

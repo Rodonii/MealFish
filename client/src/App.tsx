@@ -16,6 +16,8 @@ import NewProduct from "./pages/new-product";
 import Branding from "./pages/branding";
 import Payments from "./pages/payments";
 import History from "./pages/history";
+import Rewards from "./pages/rewards";
+import AdminTickets from "./pages/admin-tickets";
 
 function ProtectedRoute({ component: Component, ...rest }: { component: any, path: string }) {
   const { user } = useAuth();
@@ -57,6 +59,12 @@ function Router() {
         </Route>
         <Route path="/history">
           {() => <ProtectedRoute component={History} path="/history" />}
+        </Route>
+        <Route path="/rewards">
+          {() => <ProtectedRoute component={Rewards} path="/rewards" />}
+        </Route>
+        <Route path="/admin/tickets">
+          {() => <ProtectedRoute component={AdminTickets} path="/admin/tickets" />}
         </Route>
         <Route component={NotFound} />
       </Switch>

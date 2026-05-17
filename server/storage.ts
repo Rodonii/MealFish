@@ -5,6 +5,8 @@ import {
   transactions,
   settings,
   paymentRequests,
+  discountTickets,
+  redemptions,
   type User,
   type InsertUser,
   type Product,
@@ -12,6 +14,9 @@ import {
   type Transaction,
   type InsertTransaction,
   type PaymentRequest,
+  type DiscountTicket,
+  type InsertDiscountTicket,
+  type Redemption,
 } from "@shared/schema";
 import { eq, and, desc } from "drizzle-orm";
 
@@ -24,6 +29,24 @@ export interface PendingPaymentSummary {
 export interface ResolvePaymentResult {
   request: PaymentRequest;
   newPointsTotal: number | null;
+}
+
+export interface RedemptionSummary {
+  redemption: Redemption;
+  username: string;
+  ticketName: string;
+  ticketCode: string;
+}
+
+export interface MyRedemptionItem {
+  redemption: Redemption;
+  ticket: DiscountTicket;
+}
+
+export interface RedeemResult {
+  redemption: Redemption;
+  ticket: DiscountTicket;
+  newPointsTotal: number;
 }
 
 export interface IStorage {
@@ -54,10 +77,21 @@ export interface IStorage {
   getPaymentRequest(id: number): Promise<PaymentRequest | undefined>;
   listPendingPaymentRequests(): Promise<PendingPaymentSummary[]>;
   resolvePaymentRequest(id: number, action: "confirm" | "reject"): Promise<ResolvePaymentResult>;
+
+  // Discount tickets
+  listDiscountTickets(activeOnly?: boolean): Promise<DiscountTicket[]>;
+  getDiscountTicket(id: number): Promise<DiscountTicket | undefined>;
+  createDiscountTicket(ticket: InsertDiscountTicket): Promise<DiscountTicket>;
+  updateDiscountTicket(id: number, fields: Partial<InsertDiscountTicket>): Promise<DiscountTicket | undefined>;
+  deleteDiscountTicket(id: number): Promise<boolean>;
+
+  // Redemptions
+  redeemTicket(userId: number, ticketId: number, identifier: string): Promise<RedeemResult>;
+  listAllRedemptions(): Promise<RedemptionSummary[]>;
+  listUserRedemptions(userId: number): Promise<MyRedemptionItem[]>;
 }
 
 function generateReferenceCode(): string {
-  // Avoid ambiguous characters (0/O, 1/I/L)
   const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
   let out = "";
   for (let i = 0; i < 6; i++) {
@@ -139,7 +173,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(transactions)
       .where(eq(transactions.userId, userId))
-      .orderBy(transactions.createdAt); // We might need to add asc/desc but default is fine
+      .orderBy(transactions.createdAt);
   }
 
   async getSetting(key: string): Promise<string | null> {
@@ -161,7 +195,6 @@ export class DatabaseStorage implements IStorage {
     pointsToEarn: number;
     selectedAddOns?: string;
   }): Promise<PaymentRequest> {
-    // Try a few times to avoid the (extremely unlikely) reference-code collision
     for (let attempt = 0; attempt < 5; attempt++) {
       const referenceCode = generateReferenceCode();
       try {
@@ -215,12 +248,8 @@ export class DatabaseStorage implements IStorage {
     action: "confirm" | "reject",
   ): Promise<ResolvePaymentResult> {
     const existing = await this.getPaymentRequest(id);
-    if (!existing) {
-      throw new Error("Payment request not found");
-    }
-    if (existing.status !== "pending") {
-      throw new Error(`Payment is already ${existing.status}`);
-    }
+    if (!existing) throw new Error("Payment request not found");
+    if (existing.status !== "pending") throw new Error(`Payment is already ${existing.status}`);
 
     if (action === "reject") {
       const [updated] = await db
@@ -232,7 +261,6 @@ export class DatabaseStorage implements IStorage {
       return { request: updated, newPointsTotal: null };
     }
 
-    // confirm: create transaction, credit points, link them
     const user = await this.getUser(existing.userId);
     if (!user) throw new Error("Customer no longer exists");
 
@@ -256,13 +284,116 @@ export class DatabaseStorage implements IStorage {
       .returning();
 
     if (!updatedRequest) {
-      // Race: another admin already resolved it. Roll back nothing destructive
-      // but report state. The transaction we created is still valid.
       const refetched = await this.getPaymentRequest(id);
       return { request: refetched!, newPointsTotal: updatedUser.points };
     }
 
     return { request: updatedRequest, newPointsTotal: updatedUser.points };
+  }
+
+  // ── Discount tickets ──────────────────────────────────────────────────────
+
+  async listDiscountTickets(activeOnly = false): Promise<DiscountTicket[]> {
+    const rows = await db
+      .select()
+      .from(discountTickets)
+      .orderBy(desc(discountTickets.createdAt));
+    return activeOnly ? rows.filter((t) => t.isActive) : rows;
+  }
+
+  async getDiscountTicket(id: number): Promise<DiscountTicket | undefined> {
+    const [row] = await db.select().from(discountTickets).where(eq(discountTickets.id, id));
+    return row;
+  }
+
+  async createDiscountTicket(ticket: InsertDiscountTicket): Promise<DiscountTicket> {
+    const [row] = await db.insert(discountTickets).values(ticket).returning();
+    return row;
+  }
+
+  async updateDiscountTicket(
+    id: number,
+    fields: Partial<InsertDiscountTicket>,
+  ): Promise<DiscountTicket | undefined> {
+    if (Object.keys(fields).length === 0) return await this.getDiscountTicket(id);
+    const [updated] = await db
+      .update(discountTickets)
+      .set(fields)
+      .where(eq(discountTickets.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteDiscountTicket(id: number): Promise<boolean> {
+    const result = await db.delete(discountTickets).where(eq(discountTickets.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // ── Redemptions ───────────────────────────────────────────────────────────
+
+  async redeemTicket(userId: number, ticketId: number, identifier: string): Promise<RedeemResult> {
+    const ticket = await this.getDiscountTicket(ticketId);
+    if (!ticket) throw new Error("Ticket not found");
+    if (!ticket.isActive) throw new Error("This ticket is no longer active");
+
+    const user = await this.getUser(userId);
+    if (!user) throw new Error("User not found");
+    if (user.points < ticket.pointsCost) {
+      throw new Error(
+        `Insufficient points. You need ${ticket.pointsCost} pts but have ${user.points} pts.`,
+      );
+    }
+
+    const [redemption] = await db
+      .insert(redemptions)
+      .values({
+        userId,
+        ticketId,
+        identifier: identifier.trim(),
+        pointsSpent: ticket.pointsCost,
+      })
+      .returning();
+
+    const updatedUser = await this.updateUserPoints(userId, user.points - ticket.pointsCost);
+
+    return { redemption, ticket, newPointsTotal: updatedUser.points };
+  }
+
+  async listAllRedemptions(): Promise<RedemptionSummary[]> {
+    const rows = await db
+      .select({
+        redemption: redemptions,
+        username: users.username,
+        ticketName: discountTickets.name,
+        ticketCode: discountTickets.code,
+      })
+      .from(redemptions)
+      .leftJoin(users, eq(users.id, redemptions.userId))
+      .leftJoin(discountTickets, eq(discountTickets.id, redemptions.ticketId))
+      .orderBy(desc(redemptions.redeemedAt));
+
+    return rows.map((r) => ({
+      redemption: r.redemption,
+      username: r.username ?? "(unknown)",
+      ticketName: r.ticketName ?? "(deleted ticket)",
+      ticketCode: r.ticketCode ?? "",
+    }));
+  }
+
+  async listUserRedemptions(userId: number): Promise<MyRedemptionItem[]> {
+    const rows = await db
+      .select({
+        redemption: redemptions,
+        ticket: discountTickets,
+      })
+      .from(redemptions)
+      .leftJoin(discountTickets, eq(discountTickets.id, redemptions.ticketId))
+      .where(eq(redemptions.userId, userId))
+      .orderBy(desc(redemptions.redeemedAt));
+
+    return rows
+      .filter((r) => r.ticket != null)
+      .map((r) => ({ redemption: r.redemption, ticket: r.ticket! }));
   }
 }
 

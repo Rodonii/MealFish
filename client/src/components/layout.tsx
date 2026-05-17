@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@shared/routes";
-import { Award, QrCode, History, LogOut, Package, Sun, Moon, Image as ImageIcon, Inbox } from "lucide-react";
+import { Award, QrCode, History, LogOut, Package, Sun, Moon, Image as ImageIcon, Inbox, Ticket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { useTheme } from "@/hooks/use-theme";
@@ -22,9 +22,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const navItems = [
     { href: "/products", label: "Products", icon: Package },
     { href: "/history", label: "History", icon: History },
+    { href: "/rewards", label: "Rewards", icon: Award },
     ...(user.isAdmin
       ? [
           { href: "/payments", label: "Payments", icon: Inbox },
+          { href: "/admin/tickets", label: "Tickets", icon: Ticket },
           { href: "/branding", label: "Branding", icon: ImageIcon },
         ]
       : []),
@@ -71,15 +73,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
             {/* User Profile & Points */}
             <div className="flex items-center gap-2 sm:gap-4">
-              <motion.div
-                key={user.points}
-                initial={{ scale: 1.2, color: "var(--accent)" }}
-                animate={{ scale: 1, color: "inherit" }}
-                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1 sm:py-2 bg-accent/10 text-accent-foreground rounded-full border border-accent/20 shadow-sm"
-              >
-                <Award className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-accent" />
-                <span className="font-bold text-accent text-xs sm:text-sm md:text-base">{user.points} pts</span>
-              </motion.div>
+              <Link href="/rewards">
+                <motion.div
+                  key={user.points}
+                  initial={{ scale: 1.2, color: "var(--accent)" }}
+                  animate={{ scale: 1, color: "inherit" }}
+                  className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1 sm:py-2 bg-accent/10 text-accent-foreground rounded-full border border-accent/20 shadow-sm cursor-pointer hover:bg-accent/20 hover:shadow-md hover:scale-105 transition-all duration-200"
+                  data-testid="link-points-badge"
+                  title="View rewards"
+                >
+                  <Award className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-accent" />
+                  <span className="font-bold text-accent text-xs sm:text-sm md:text-base">{user.points} pts</span>
+                </motion.div>
+              </Link>
 
               <div className="flex items-center gap-1 sm:gap-3 sm:pl-4 sm:border-l">
                 <span

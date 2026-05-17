@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { users, products, transactions, paymentRequests } from './schema';
+import { users, products, transactions, paymentRequests, discountTickets, redemptions } from './schema';
 
 export const errorSchemas = {
   validation: z.object({
@@ -205,6 +205,96 @@ export const api = {
         200: z.custom<typeof paymentRequests.$inferSelect>(),
         400: errorSchemas.validation,
         404: errorSchemas.notFound,
+      },
+    },
+  },
+  tickets: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/tickets' as const,
+      responses: {
+        200: z.array(z.custom<typeof discountTickets.$inferSelect>()),
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/tickets' as const,
+      input: z.object({
+        name: z.string().min(1),
+        description: z.string().optional().default(""),
+        code: z.string().min(1).max(24).regex(/^[A-Z0-9_-]+$/i, "Code can only contain letters, numbers, - and _"),
+        pointsCost: z.number().int().positive(),
+        discountType: z.enum(["percent", "flat"]),
+        discountValue: z.number().int().positive(),
+        isActive: z.boolean().optional().default(true),
+      }),
+      responses: {
+        201: z.custom<typeof discountTickets.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
+    update: {
+      method: 'PATCH' as const,
+      path: '/api/tickets/:id' as const,
+      input: z.object({
+        name: z.string().min(1).optional(),
+        description: z.string().optional(),
+        code: z.string().min(1).max(24).regex(/^[A-Z0-9_-]+$/i, "Code can only contain letters, numbers, - and _").optional(),
+        pointsCost: z.number().int().positive().optional(),
+        discountType: z.enum(["percent", "flat"]).optional(),
+        discountValue: z.number().int().positive().optional(),
+        isActive: z.boolean().optional(),
+      }),
+      responses: {
+        200: z.custom<typeof discountTickets.$inferSelect>(),
+        400: errorSchemas.validation,
+        404: errorSchemas.notFound,
+      },
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/tickets/:id' as const,
+      responses: {
+        200: z.object({ success: z.boolean() }),
+        404: errorSchemas.notFound,
+      },
+    },
+    redeem: {
+      method: 'POST' as const,
+      path: '/api/tickets/:id/redeem' as const,
+      input: z.object({
+        identifier: z.string().min(1, "Please enter your name or identifier"),
+      }),
+      responses: {
+        200: z.object({
+          redemption: z.custom<typeof redemptions.$inferSelect>(),
+          ticket: z.custom<typeof discountTickets.$inferSelect>(),
+          newPointsTotal: z.number(),
+        }),
+        400: errorSchemas.validation,
+        404: errorSchemas.notFound,
+      },
+    },
+    listRedemptions: {
+      method: 'GET' as const,
+      path: '/api/tickets/redemptions' as const,
+      responses: {
+        200: z.array(z.object({
+          redemption: z.custom<typeof redemptions.$inferSelect>(),
+          username: z.string(),
+          ticketName: z.string(),
+          ticketCode: z.string(),
+        })),
+      },
+    },
+    myRedemptions: {
+      method: 'GET' as const,
+      path: '/api/tickets/my-redemptions' as const,
+      responses: {
+        200: z.array(z.object({
+          redemption: z.custom<typeof redemptions.$inferSelect>(),
+          ticket: z.custom<typeof discountTickets.$inferSelect>(),
+        })),
       },
     },
   },

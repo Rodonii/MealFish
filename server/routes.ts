@@ -377,6 +377,95 @@ export async function registerRoutes(
     }
   });
 
+  // ── Discount Tickets ──────────────────────────────────────────────────────
+
+  // GET /api/tickets — active tickets for customers; all for admin
+  app.get(api.tickets.list.path, requireUser, async (req: any, res) => {
+    const activeOnly = !req.currentUser.isAdmin;
+    const tickets = await storage.listDiscountTickets(activeOnly);
+    res.json(tickets);
+  });
+
+  // POST /api/tickets — admin creates a ticket
+  app.post(api.tickets.create.path, requireAdmin, async (req, res) => {
+    try {
+      const input = api.tickets.create.input.parse(req.body);
+      const ticket = await storage.createDiscountTicket({
+        ...input,
+        description: input.description ?? "",
+        isActive: input.isActive ?? true,
+      });
+      res.status(201).json(ticket);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      const msg = (err as any)?.message || "Could not create ticket";
+      const status = msg.includes("unique") || msg.includes("duplicate") ? 400 : 500;
+      res.status(status).json({ message: msg.includes("unique") ? "That code is already in use. Choose a different one." : msg });
+    }
+  });
+
+  // PATCH /api/tickets/:id — admin updates a ticket
+  app.patch(api.tickets.update.path, requireAdmin, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid ticket id" });
+      const input = api.tickets.update.input.parse(req.body);
+      const updated = await storage.updateDiscountTicket(id, input as any);
+      if (!updated) return res.status(404).json({ message: "Ticket not found" });
+      res.json(updated);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      const msg = (err as any)?.message || "Could not update ticket";
+      res.status(msg.includes("unique") ? 400 : 500).json({
+        message: msg.includes("unique") ? "That code is already in use. Choose a different one." : msg,
+      });
+    }
+  });
+
+  // DELETE /api/tickets/:id — admin deletes a ticket
+  app.delete(api.tickets.delete.path, requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid ticket id" });
+    const ok = await storage.deleteDiscountTicket(id);
+    if (!ok) return res.status(404).json({ message: "Ticket not found" });
+    res.json({ success: true });
+  });
+
+  // GET /api/tickets/redemptions — admin sees all redemptions
+  // NOTE: this must be registered BEFORE /api/tickets/:id/redeem to avoid path conflicts
+  app.get(api.tickets.listRedemptions.path, requireAdmin, async (_req, res) => {
+    const list = await storage.listAllRedemptions();
+    res.json(list);
+  });
+
+  // GET /api/tickets/my-redemptions — customer sees own redemptions
+  app.get(api.tickets.myRedemptions.path, requireUser, async (req: any, res) => {
+    const list = await storage.listUserRedemptions(req.currentUser.id);
+    res.json(list);
+  });
+
+  // POST /api/tickets/:id/redeem — customer redeems a ticket
+  app.post(api.tickets.redeem.path, requireUser, async (req: any, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid ticket id" });
+      const input = api.tickets.redeem.input.parse(req.body);
+      const result = await storage.redeemTicket(req.currentUser.id, id, input.identifier);
+      res.json(result);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      const msg = (err as any)?.message || "Could not redeem ticket";
+      const status = msg.includes("not found") ? 404 : 400;
+      res.status(status).json({ message: msg });
+    }
+  });
+
   return httpServer;
 }
 

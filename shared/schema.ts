@@ -49,9 +49,34 @@ export const paymentRequests = pgTable("payment_requests", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Discount tickets created by admin — customers redeem with points
+export const discountTickets = pgTable("discount_tickets", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description").notNull().default(""),
+  code: text("code").notNull().unique(), // base code admin sets, e.g. "FISH50OFF"
+  pointsCost: integer("points_cost").notNull(), // points required to redeem
+  discountType: text("discount_type").notNull().default("percent"), // "percent" | "flat"
+  discountValue: integer("discount_value").notNull(), // percent (1-100) or flat in cents
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Records of who redeemed which ticket
+export const redemptions = pgTable("redemptions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  ticketId: integer("ticket_id").notNull(),
+  identifier: text("identifier").notNull(), // customer's name / label typed at redemption
+  pointsSpent: integer("points_spent").notNull(),
+  redeemedAt: timestamp("redeemed_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, points: true, isAdmin: true });
 export const insertProductSchema = createInsertSchema(products).omit({ id: true });
 export const insertTransactionSchema = createInsertSchema(transactions).omit({ id: true, createdAt: true });
+export const insertDiscountTicketSchema = createInsertSchema(discountTickets).omit({ id: true, createdAt: true });
+export const insertRedemptionSchema = createInsertSchema(redemptions).omit({ id: true, redeemedAt: true });
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -63,3 +88,9 @@ export type Transaction = typeof transactions.$inferSelect;
 export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
 
 export type PaymentRequest = typeof paymentRequests.$inferSelect;
+
+export type DiscountTicket = typeof discountTickets.$inferSelect;
+export type InsertDiscountTicket = z.infer<typeof insertDiscountTicketSchema>;
+
+export type Redemption = typeof redemptions.$inferSelect;
+export type InsertRedemption = z.infer<typeof insertRedemptionSchema>;

@@ -4,7 +4,7 @@ import { useProducts } from "@/hooks/use-products";
 import { formatPrice } from "@/lib/utils";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
-import { Receipt, Calendar, ArrowUpRight, Zap, Loader2, Plus } from "lucide-react";
+import { Receipt, Calendar, ArrowUpRight, Zap, Loader2, Plus, MessageSquare } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 
@@ -143,6 +143,15 @@ export default function History() {
                           </span>
                         ))}
                       </div>
+                    </div>
+                  )}
+
+                  {(tx as any).notes && (
+                    <div className="mt-3 pt-3 border-t border-border/60" data-testid={`tx-notes-${tx.id}`}>
+                      <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-bold flex items-center gap-1 mb-1.5">
+                        <MessageSquare className="w-3 h-3" /> Special instructions
+                      </div>
+                      <p className="text-sm text-foreground font-medium">{(tx as any).notes}</p>
                     </div>
                   )}
                 </div>

@@ -161,6 +161,7 @@ export const api = {
           .optional()
           .default([]),
         redemptionId: z.number().int().positive().optional(),
+        notes: z.string().max(200).optional().default(""),
       }),
       responses: {
         201: z.custom<typeof paymentRequests.$inferSelect>(),

@@ -23,6 +23,7 @@ import {
   Save,
   Ticket,
   Tag,
+  MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -61,6 +62,7 @@ export default function ProductDetail() {
   const [adminEditing, setAdminEditing] = React.useState(false);
   const [draftAddOns, setDraftAddOns] = React.useState<AddOn[]>([]);
   const [selectedRedemptionId, setSelectedRedemptionId] = React.useState<number | null>(null);
+  const [notes, setNotes] = React.useState("");
 
   const { data: product, isLoading: productLoading } = useProduct(Number(id));
   const { data: settings } = useQuery<{ logoUrl: string | null; paymentQrUrl: string | null }>({
@@ -85,8 +87,8 @@ export default function ProductDetail() {
   });
 
   const startPaymentMutation = useMutation({
-    mutationFn: async ({ productId, addOns, redemptionId }: { productId: number; addOns: AddOn[]; redemptionId?: number }) => {
-      const res = await apiRequest("POST", api.payments.create.path, { productId, addOns, redemptionId });
+    mutationFn: async ({ productId, addOns, redemptionId, notes: orderNotes }: { productId: number; addOns: AddOn[]; redemptionId?: number; notes?: string }) => {
+      const res = await apiRequest("POST", api.payments.create.path, { productId, addOns, redemptionId, notes: orderNotes });
       return (await res.json()) as PaymentRequest;
     },
     onSuccess: (req) => {
@@ -209,6 +211,7 @@ export default function ProductDetail() {
       productId: product.id,
       addOns: selectedAddOns,
       redemptionId: selectedRedemptionId ?? undefined,
+      notes,
     });
   };
 
@@ -217,6 +220,7 @@ export default function ProductDetail() {
     setReferenceCode("");
     setResolved(false);
     setSelectedRedemptionId(null);
+    setNotes("");
   };
 
   const toggleAddOn = (addOn: AddOn) => {
@@ -573,6 +577,24 @@ export default function ProductDetail() {
                         </div>
                       </div>
                     )}
+
+                    {/* Notes for the cook */}
+                    <div className="w-full mb-3">
+                      <label className="text-sm font-bold text-foreground mb-2 flex items-center gap-2" htmlFor="order-notes">
+                        <MessageSquare className="w-4 h-4 text-primary" /> Special instructions
+                      </label>
+                      <textarea
+                        id="order-notes"
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        placeholder="e.g. No onions, extra spicy, well done..."
+                        maxLength={200}
+                        rows={2}
+                        className="w-full px-4 py-3 rounded-2xl border-2 border-border bg-card text-foreground text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none"
+                        data-testid="input-order-notes"
+                      />
+                      <div className="text-[10px] text-muted-foreground text-right mt-1">{notes.length}/200</div>
+                    </div>
 
                     {/* Running total */}
                     <div className="w-full mb-3 rounded-2xl border border-border bg-card px-5 py-3 space-y-1.5">

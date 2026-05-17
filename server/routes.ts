@@ -227,6 +227,7 @@ export async function registerRoutes(
         productId: product.id,
         amount: product.price,
         pointsEarned,
+        notes: "",
       });
 
       const updatedUser = await storage.updateUserPoints(user.id, user.points + pointsEarned);
@@ -343,6 +344,7 @@ export async function registerRoutes(
         pointsToEarn,
         selectedAddOns: JSON.stringify(validatedAddOns),
         redemptionId,
+        notes: input.notes ?? "",
       });
       res.status(201).json(request);
     } catch (err) {

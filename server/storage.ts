@@ -74,6 +74,7 @@ export interface IStorage {
     pointsToEarn: number;
     selectedAddOns?: string;
     redemptionId?: number;
+    notes?: string;
   }): Promise<PaymentRequest>;
   getPaymentRequest(id: number): Promise<PaymentRequest | undefined>;
   listPendingPaymentRequests(): Promise<PendingPaymentSummary[]>;
@@ -213,6 +214,7 @@ export class DatabaseStorage implements IStorage {
             pointsToEarn: input.pointsToEarn,
             selectedAddOns: input.selectedAddOns ?? "[]",
             redemptionId: input.redemptionId,
+            notes: input.notes ?? "",
             referenceCode,
             status: "pending",
           })
@@ -277,6 +279,7 @@ export class DatabaseStorage implements IStorage {
       amount: existing.amount,
       pointsEarned: existing.pointsToEarn,
       selectedAddOns: existing.selectedAddOns ?? "[]",
+      notes: existing.notes ?? "",
     });
 
     const updatedUser = await this.updateUserPoints(

@@ -34,6 +34,7 @@ export const transactions = pgTable("transactions", {
   pointsEarned: integer("points_earned").notNull(),
   selectedAddOns: text("selected_add_ons").notNull().default("[]"), // JSON: [{ name, price }]
   redemptionId: integer("redemption_id"),
+  notes: text("notes").notNull().default(""),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -45,6 +46,7 @@ export const paymentRequests = pgTable("payment_requests", {
   pointsToEarn: integer("points_to_earn").notNull(),
   selectedAddOns: text("selected_add_ons").notNull().default("[]"), // JSON: [{ name, price }]
   redemptionId: integer("redemption_id"),
+  notes: text("notes").notNull().default(""),
   referenceCode: text("reference_code").notNull().unique(),
   status: text("status").notNull().default("pending"), // pending | confirmed | rejected
   transactionId: integer("transaction_id"),

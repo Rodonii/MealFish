@@ -19,6 +19,7 @@ import {
   User as UserIcon,
   Package,
   Plus,
+  MessageSquare,
 } from "lucide-react";
 import type { PaymentRequest } from "@shared/schema";
 
@@ -197,6 +198,15 @@ export default function Payments() {
                         </div>
                       ))}
                     </div>
+                  </div>
+                )}
+
+                {(item.request as any).notes && (
+                  <div className="mb-5 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 px-4 py-3" data-testid={`notes-${id}`}>
+                    <div className="text-[11px] uppercase tracking-wide text-amber-700 dark:text-amber-400 font-bold flex items-center gap-1.5 mb-2">
+                      <MessageSquare className="w-3 h-3" /> Customer notes
+                    </div>
+                    <p className="text-sm text-amber-800 dark:text-amber-300 font-medium">{(item.request as any).notes}</p>
                   </div>
                 )}
 

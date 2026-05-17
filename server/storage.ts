@@ -77,6 +77,7 @@ export interface IStorage {
     notes?: string;
   }): Promise<PaymentRequest>;
   getPaymentRequest(id: number): Promise<PaymentRequest | undefined>;
+  updatePaymentRequestProof(id: number, proofImageUrl: string): Promise<PaymentRequest | undefined>;
   listPendingPaymentRequests(): Promise<PendingPaymentSummary[]>;
   resolvePaymentRequest(id: number, action: "confirm" | "reject"): Promise<ResolvePaymentResult>;
 
@@ -229,6 +230,15 @@ export class DatabaseStorage implements IStorage {
 
   async getPaymentRequest(id: number): Promise<PaymentRequest | undefined> {
     const [row] = await db.select().from(paymentRequests).where(eq(paymentRequests.id, id));
+    return row;
+  }
+
+  async updatePaymentRequestProof(id: number, proofImageUrl: string): Promise<PaymentRequest | undefined> {
+    const [row] = await db
+      .update(paymentRequests)
+      .set({ proofImageUrl })
+      .where(and(eq(paymentRequests.id, id), eq(paymentRequests.status, "pending")))
+      .returning();
     return row;
   }
 

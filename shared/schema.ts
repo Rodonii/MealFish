@@ -47,6 +47,7 @@ export const paymentRequests = pgTable("payment_requests", {
   selectedAddOns: text("selected_add_ons").notNull().default("[]"), // JSON: [{ name, price }]
   redemptionId: integer("redemption_id"),
   notes: text("notes").notNull().default(""),
+  proofImageUrl: text("proof_image_url"),
   referenceCode: text("reference_code").notNull().unique(),
   status: text("status").notNull().default("pending"), // pending | confirmed | rejected
   transactionId: integer("transaction_id"),

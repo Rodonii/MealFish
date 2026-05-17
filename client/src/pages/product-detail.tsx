@@ -24,6 +24,9 @@ import {
   Ticket,
   Tag,
   MessageSquare,
+  Upload,
+  ImageIcon,
+  CheckCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -63,6 +66,8 @@ export default function ProductDetail() {
   const [draftAddOns, setDraftAddOns] = React.useState<AddOn[]>([]);
   const [selectedRedemptionId, setSelectedRedemptionId] = React.useState<number | null>(null);
   const [notes, setNotes] = React.useState("");
+  const [proofUploading, setProofUploading] = React.useState(false);
+  const [proofUploaded, setProofUploaded] = React.useState(false);
 
   const { data: product, isLoading: productLoading } = useProduct(Number(id));
   const { data: settings } = useQuery<{ logoUrl: string | null; paymentQrUrl: string | null }>({
@@ -215,12 +220,38 @@ export default function ProductDetail() {
     });
   };
 
+  const handleProofUpload = async (file: File) => {
+    if (!paymentRequestId) return;
+    setProofUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("proof", file);
+      const userId = user?.id;
+      const res = await fetch(`/api/payments/${paymentRequestId}/proof`, {
+        method: "POST",
+        headers: userId ? { "x-user-id": String(userId) } : {},
+        body: formData,
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Upload failed");
+      }
+      setProofUploaded(true);
+      toast({ title: "Proof uploaded!", description: "The owner can now see your payment screenshot." });
+    } catch (err: any) {
+      toast({ title: "Upload failed", description: err?.message || "Please try again.", variant: "destructive" });
+    } finally {
+      setProofUploading(false);
+    }
+  };
+
   const handleStartOver = () => {
     setPaymentRequestId(null);
     setReferenceCode("");
     setResolved(false);
     setSelectedRedemptionId(null);
     setNotes("");
+    setProofUploaded(false);
   };
 
   const toggleAddOn = (addOn: AddOn) => {
@@ -702,6 +733,66 @@ export default function ProductDetail() {
                       <div className="text-lg font-mono font-bold text-foreground tracking-wider" data-testid="text-reference">
                         {referenceCode}
                       </div>
+                    </div>
+
+                    {/* Proof of payment upload */}
+                    <div className="w-full mt-2 mb-4 rounded-2xl border-2 border-dashed border-border bg-card overflow-hidden">
+                      {proofUploaded ? (
+                        <div className="flex flex-col items-center justify-center py-5 gap-2 text-center">
+                          <CheckCircle className="w-8 h-8 text-emerald-500" />
+                          <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                            Payment screenshot sent!
+                          </p>
+                          <p className="text-xs text-muted-foreground">The owner can see your proof. Waiting for confirmation...</p>
+                          <label className="mt-1 cursor-pointer text-xs text-primary underline underline-offset-2" data-testid="link-replace-proof">
+                            Replace screenshot
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                const f = e.target.files?.[0];
+                                if (f) handleProofUpload(f);
+                                e.target.value = "";
+                              }}
+                            />
+                          </label>
+                        </div>
+                      ) : (
+                        <label className="flex flex-col items-center justify-center py-6 gap-2 cursor-pointer hover:bg-primary/5 transition-colors" data-testid="label-proof-upload">
+                          {proofUploading ? (
+                            <>
+                              <Loader2 className="w-7 h-7 animate-spin text-primary" />
+                              <span className="text-sm font-medium text-primary">Uploading...</span>
+                            </>
+                          ) : (
+                            <>
+                              <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center">
+                                <Upload className="w-5 h-5 text-primary" />
+                              </div>
+                              <div className="text-center">
+                                <p className="text-sm font-semibold text-foreground">Send payment screenshot</p>
+                                <p className="text-xs text-muted-foreground mt-0.5">Tap to upload your GCash / Maya receipt</p>
+                              </div>
+                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                <ImageIcon className="w-3 h-3" /> JPG, PNG, WEBP — max 5 MB
+                              </div>
+                            </>
+                          )}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            disabled={proofUploading}
+                            onChange={(e) => {
+                              const f = e.target.files?.[0];
+                              if (f) handleProofUpload(f);
+                              e.target.value = "";
+                            }}
+                            data-testid="input-proof-file"
+                          />
+                        </label>
+                      )}
                     </div>
 
                     <div className="w-full flex items-center justify-center gap-3 text-sm text-primary font-medium mb-2">

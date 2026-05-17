@@ -20,6 +20,7 @@ import {
   Package,
   Plus,
   MessageSquare,
+  ImageIcon,
 } from "lucide-react";
 import type { PaymentRequest } from "@shared/schema";
 
@@ -207,6 +208,33 @@ export default function Payments() {
                       <MessageSquare className="w-3 h-3" /> Customer notes
                     </div>
                     <p className="text-sm text-amber-800 dark:text-amber-300 font-medium">{(item.request as any).notes}</p>
+                  </div>
+                )}
+
+                {(item.request as any).proofImageUrl ? (
+                  <div className="mb-5 rounded-2xl border border-emerald-200 dark:border-emerald-800/50 bg-emerald-50 dark:bg-emerald-950/30 px-4 py-3" data-testid={`proof-${id}`}>
+                    <div className="text-[11px] uppercase tracking-wide text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-1.5 mb-3">
+                      <ImageIcon className="w-3 h-3" /> Payment proof
+                    </div>
+                    <a
+                      href={(item.request as any).proofImageUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block rounded-xl overflow-hidden border border-border hover:ring-2 hover:ring-primary/40 transition-all"
+                      data-testid={`link-proof-${id}`}
+                    >
+                      <img
+                        src={(item.request as any).proofImageUrl}
+                        alt="Payment proof"
+                        className="w-full max-h-64 object-contain bg-white dark:bg-white"
+                      />
+                    </a>
+                    <p className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-2 text-center">Tap image to view full size</p>
+                  </div>
+                ) : (
+                  <div className="mb-5 rounded-2xl border border-dashed border-border px-4 py-3 flex items-center gap-2 text-muted-foreground" data-testid={`no-proof-${id}`}>
+                    <ImageIcon className="w-4 h-4 shrink-0" />
+                    <span className="text-xs">No payment screenshot uploaded yet</span>
                   </div>
                 )}
 

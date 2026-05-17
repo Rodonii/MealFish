@@ -358,6 +358,27 @@ export async function registerRoutes(
     }
   });
 
+  // Customer uploads payment proof screenshot
+  app.post("/api/payments/:id/proof", requireUser, upload.single("proof"), async (req: any, res) => {
+    if (!req.file) {
+      return res.status(400).json({ message: "No image file provided" });
+    }
+    const id = Number(req.params.id);
+    const existing = await storage.getPaymentRequest(id);
+    if (!existing) {
+      return res.status(404).json({ message: "Payment request not found" });
+    }
+    if (existing.userId !== req.currentUser.id) {
+      return res.status(403).json({ message: "Not allowed" });
+    }
+    if (existing.status !== "pending") {
+      return res.status(400).json({ message: "Payment is already resolved" });
+    }
+    const proofImageUrl = `/uploads/${req.file.filename}`;
+    const updated = await storage.updatePaymentRequestProof(id, proofImageUrl);
+    res.json({ proofImageUrl: updated?.proofImageUrl });
+  });
+
   // Customer (or admin) polls payment status
   app.get(api.payments.status.path, requireUser, async (req: any, res) => {
     const id = Number(req.params.id);

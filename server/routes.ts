@@ -312,8 +312,28 @@ export async function registerRoutes(
         validatedAddOns.push({ name: match.name, price: match.price });
       }
 
-      const addOnTotal = validatedAddOns.reduce((sum, a) => sum + a.price, 0);
-      const total = product.price + addOnTotal;
+      let addOnTotal = validatedAddOns.reduce((sum, a) => sum + a.price, 0);
+      let total = product.price + addOnTotal;
+
+      // Apply ticket discount if redemptionId provided
+      let redemptionId: number | undefined;
+      if (input.redemptionId) {
+        const redemption = await storage.getRedemption(input.redemptionId);
+        if (!redemption || redemption.userId !== req.currentUser.id || redemption.isUsed) {
+          return res.status(400).json({ message: "Invalid or already-used ticket" });
+        }
+        const ticket = await storage.getDiscountTicket(redemption.ticketId);
+        if (!ticket || !ticket.isActive) {
+          return res.status(400).json({ message: "Ticket is no longer active" });
+        }
+        const discount = await storage.applyRedemptionDiscount(total, input.redemptionId);
+        if (!discount) {
+          return res.status(400).json({ message: "Could not apply ticket discount" });
+        }
+        total = discount.discountedTotal;
+        redemptionId = input.redemptionId;
+      }
+
       const pointsToEarn = Math.floor((total / 100) * 0.30);
 
       const request = await storage.createPaymentRequest({
@@ -322,6 +342,7 @@ export async function registerRoutes(
         amount: total,
         pointsToEarn,
         selectedAddOns: JSON.stringify(validatedAddOns),
+        redemptionId,
       });
       res.status(201).json(request);
     } catch (err) {
@@ -357,6 +378,10 @@ export async function registerRoutes(
     try {
       const id = Number(req.params.id);
       const result = await storage.resolvePaymentRequest(id, "confirm");
+      // If a ticket was applied, mark it as consumed
+      if (result.request.redemptionId) {
+        await storage.markRedemptionUsed(result.request.redemptionId);
+      }
       res.json(result.request);
     } catch (err: any) {
       const message = err?.message || "Could not confirm payment";
@@ -442,9 +467,15 @@ export async function registerRoutes(
     res.json(list);
   });
 
-  // GET /api/tickets/my-redemptions — customer sees own redemptions
-  app.get(api.tickets.myRedemptions.path, requireUser, async (req: any, res) => {
+  // GET /api/tickets/available — customer sees own unused redemptions (for applying at payment)
+  app.get(api.tickets.available.path, requireUser, async (req: any, res) => {
     const list = await storage.listUserRedemptions(req.currentUser.id);
+    res.json(list);
+  });
+
+  // GET /api/tickets/my-redemptions — customer sees own redemptions (all, including used)
+  app.get(api.tickets.myRedemptions.path, requireUser, async (req: any, res) => {
+    const list = await storage.listAllUserRedemptions(req.currentUser.id);
     res.json(list);
   });
 

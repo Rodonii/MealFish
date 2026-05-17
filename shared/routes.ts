@@ -160,6 +160,7 @@ export const api = {
           .array(z.object({ name: z.string().min(1), price: z.number().int().nonnegative() }))
           .optional()
           .default([]),
+        redemptionId: z.number().int().positive().optional(),
       }),
       responses: {
         201: z.custom<typeof paymentRequests.$inferSelect>(),
@@ -290,6 +291,16 @@ export const api = {
     myRedemptions: {
       method: 'GET' as const,
       path: '/api/tickets/my-redemptions' as const,
+      responses: {
+        200: z.array(z.object({
+          redemption: z.custom<typeof redemptions.$inferSelect>(),
+          ticket: z.custom<typeof discountTickets.$inferSelect>(),
+        })),
+      },
+    },
+    available: {
+      method: 'GET' as const,
+      path: '/api/tickets/available' as const,
       responses: {
         200: z.array(z.object({
           redemption: z.custom<typeof redemptions.$inferSelect>(),

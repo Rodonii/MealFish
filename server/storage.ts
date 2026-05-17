@@ -73,6 +73,7 @@ export interface IStorage {
     amount: number;
     pointsToEarn: number;
     selectedAddOns?: string;
+    redemptionId?: number;
   }): Promise<PaymentRequest>;
   getPaymentRequest(id: number): Promise<PaymentRequest | undefined>;
   listPendingPaymentRequests(): Promise<PendingPaymentSummary[]>;
@@ -89,6 +90,11 @@ export interface IStorage {
   redeemTicket(userId: number, ticketId: number, identifier: string): Promise<RedeemResult>;
   listAllRedemptions(): Promise<RedemptionSummary[]>;
   listUserRedemptions(userId: number): Promise<MyRedemptionItem[]>;
+  listAllUserRedemptions(userId: number): Promise<MyRedemptionItem[]>;
+  getRedemption(id: number): Promise<Redemption | undefined>;
+  markRedemptionUsed(id: number): Promise<Redemption | undefined>;
+  applyRedemptionDiscount(total: number, redemptionId: number): Promise<{ discountedTotal: number; ticketName: string; ticketCode: string } | null>;
+  getPaymentRequestWithRedemption(id: number): Promise<(PaymentRequest & { redemption?: Redemption }) | undefined>;
 }
 
 function generateReferenceCode(): string {
@@ -206,6 +212,7 @@ export class DatabaseStorage implements IStorage {
             amount: input.amount,
             pointsToEarn: input.pointsToEarn,
             selectedAddOns: input.selectedAddOns ?? "[]",
+            redemptionId: input.redemptionId,
             referenceCode,
             status: "pending",
           })
@@ -388,12 +395,67 @@ export class DatabaseStorage implements IStorage {
       })
       .from(redemptions)
       .leftJoin(discountTickets, eq(discountTickets.id, redemptions.ticketId))
+      .where(and(eq(redemptions.userId, userId), eq(redemptions.isUsed, false)))
+      .orderBy(desc(redemptions.redeemedAt));
+
+    return rows
+      .filter((r) => r.ticket != null)
+      .map((r) => ({ redemption: r.redemption, ticket: r.ticket! }));
+  }
+
+  async listAllUserRedemptions(userId: number): Promise<MyRedemptionItem[]> {
+    const rows = await db
+      .select({
+        redemption: redemptions,
+        ticket: discountTickets,
+      })
+      .from(redemptions)
+      .leftJoin(discountTickets, eq(discountTickets.id, redemptions.ticketId))
       .where(eq(redemptions.userId, userId))
       .orderBy(desc(redemptions.redeemedAt));
 
     return rows
       .filter((r) => r.ticket != null)
       .map((r) => ({ redemption: r.redemption, ticket: r.ticket! }));
+  }
+
+  async getRedemption(id: number): Promise<Redemption | undefined> {
+    const [row] = await db.select().from(redemptions).where(eq(redemptions.id, id));
+    return row;
+  }
+
+  async markRedemptionUsed(id: number): Promise<Redemption | undefined> {
+    const [updated] = await db
+      .update(redemptions)
+      .set({ isUsed: true })
+      .where(eq(redemptions.id, id))
+      .returning();
+    return updated;
+  }
+
+  async applyRedemptionDiscount(total: number, redemptionId: number): Promise<{ discountedTotal: number; ticketName: string; ticketCode: string } | null> {
+    const redemption = await this.getRedemption(redemptionId);
+    if (!redemption || redemption.isUsed) return null;
+    const ticket = await this.getDiscountTicket(redemption.ticketId);
+    if (!ticket || !ticket.isActive) return null;
+
+    let discounted = total;
+    if (ticket.discountType === "percent") {
+      discounted = Math.max(0, Math.floor(total * (100 - ticket.discountValue) / 100));
+    } else {
+      discounted = Math.max(0, total - ticket.discountValue);
+    }
+    return { discountedTotal: discounted, ticketName: ticket.name, ticketCode: ticket.code };
+  }
+
+  async getPaymentRequestWithRedemption(id: number): Promise<(PaymentRequest & { redemption?: Redemption }) | undefined> {
+    const [row] = await db
+      .select()
+      .from(paymentRequests)
+      .where(eq(paymentRequests.id, id));
+    if (!row || !row.redemptionId) return row;
+    const redemption = await this.getRedemption(row.redemptionId);
+    return { ...row, redemption: redemption ?? undefined };
   }
 }
 

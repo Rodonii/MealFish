@@ -494,6 +494,9 @@ export default function AdminTickets() {
                       ? format(new Date(redemption.redeemedAt), "MMM d, h:mm a")
                       : "just now"}
                   </div>
+                  {redemption.isUsed && (
+                    <div className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 mt-0.5">Ticket consumed</div>
+                  )}
                 </div>
               </motion.div>
             ))}

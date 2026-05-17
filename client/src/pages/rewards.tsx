@@ -428,6 +428,15 @@ export default function Rewards() {
                         ? `${ticket.discountValue}% off`
                         : `₱${(ticket.discountValue / 100).toFixed(0)} off`}
                     </span>
+                    {redemption.isUsed ? (
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                        Used
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                        Ready to use
+                      </span>
+                    )}
                   </div>
                 </div>
               ))}

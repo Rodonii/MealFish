@@ -21,6 +21,8 @@ import {
   Plus,
   Settings,
   Save,
+  Ticket,
+  Tag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -58,11 +60,21 @@ export default function ProductDetail() {
   const [selectedAddOns, setSelectedAddOns] = React.useState<AddOn[]>([]);
   const [adminEditing, setAdminEditing] = React.useState(false);
   const [draftAddOns, setDraftAddOns] = React.useState<AddOn[]>([]);
+  const [selectedRedemptionId, setSelectedRedemptionId] = React.useState<number | null>(null);
 
   const { data: product, isLoading: productLoading } = useProduct(Number(id));
   const { data: settings } = useQuery<{ logoUrl: string | null; paymentQrUrl: string | null }>({
     queryKey: [api.settings.get.path],
   });
+
+  // Fetch available (unused) ticket redemptions for the user
+  const { data: availableTickets = [] } = useQuery<
+    Array<{ redemption: { id: number; pointsSpent: number }; ticket: { id: number; name: string; code: string; discountType: string; discountValue: number } }>
+  >({
+    queryKey: [api.tickets.available.path],
+    enabled: !!user && !user.isAdmin,
+  });
+
   const purchaseMutation = usePurchase();
 
   // Poll the payment request until the owner confirms or rejects it
@@ -73,8 +85,8 @@ export default function ProductDetail() {
   });
 
   const startPaymentMutation = useMutation({
-    mutationFn: async ({ productId, addOns }: { productId: number; addOns: AddOn[] }) => {
-      const res = await apiRequest("POST", api.payments.create.path, { productId, addOns });
+    mutationFn: async ({ productId, addOns, redemptionId }: { productId: number; addOns: AddOn[]; redemptionId?: number }) => {
+      const res = await apiRequest("POST", api.payments.create.path, { productId, addOns, redemptionId });
       return (await res.json()) as PaymentRequest;
     },
     onSuccess: (req) => {
@@ -140,6 +152,7 @@ export default function ProductDetail() {
     setResolved(false);
     setSelectedAddOns([]);
     setAdminEditing(false);
+    setSelectedRedemptionId(null);
   }, [id]);
 
   React.useEffect(() => {
@@ -192,13 +205,18 @@ export default function ProductDetail() {
   const handleStartPayment = () => {
     if (!user) return;
     queryClient.removeQueries({ queryKey: ["/api/payments/status"] });
-    startPaymentMutation.mutate({ productId: product.id, addOns: selectedAddOns });
+    startPaymentMutation.mutate({
+      productId: product.id,
+      addOns: selectedAddOns,
+      redemptionId: selectedRedemptionId ?? undefined,
+    });
   };
 
   const handleStartOver = () => {
     setPaymentRequestId(null);
     setReferenceCode("");
     setResolved(false);
+    setSelectedRedemptionId(null);
   };
 
   const toggleAddOn = (addOn: AddOn) => {
@@ -223,7 +241,20 @@ export default function ProductDetail() {
   const nutrition = parseJsonSafe((product as any).nutrition || "", {});
 
   const addOnTotal = selectedAddOns.reduce((sum, a) => sum + a.price, 0);
-  const total = product.price + addOnTotal;
+  const rawTotal = product.price + addOnTotal;
+
+  // Compute ticket discount if selected
+  const selectedTicket = selectedRedemptionId
+    ? availableTickets.find((t) => t.redemption.id === selectedRedemptionId)
+    : undefined;
+  const discountAmount = selectedTicket
+    ? selectedTicket.ticket.discountType === "percent"
+      ? Math.floor(rawTotal * selectedTicket.ticket.discountValue / 100)
+      : selectedTicket.ticket.discountValue
+    : 0;
+  const discountedTotal = Math.max(0, rawTotal - discountAmount);
+
+  const total = discountedTotal;
   const pointsToEarn = Math.floor((total / 100) * POINTS_RATE);
   const basePoints = Math.floor((product.price / 100) * POINTS_RATE);
 
@@ -481,6 +512,68 @@ export default function ProductDetail() {
                       </div>
                     )}
 
+                    {/* Ticket selector */}
+                    {availableTickets.length > 0 && (
+                      <div className="w-full mb-5">
+                        <h4 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+                          <Ticket className="w-4 h-4 text-primary" /> Your discount tickets
+                        </h4>
+                        <div className="space-y-2" data-testid="ticket-options">
+                          {/* "No ticket" option */}
+                          <button
+                            type="button"
+                            onClick={() => setSelectedRedemptionId(null)}
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl border-2 transition-all text-left ${
+                              !selectedRedemptionId
+                                ? "border-primary bg-primary/10 shadow-md"
+                                : "border-border bg-card hover:border-primary/40 hover:bg-primary/5"
+                            }`}
+                            data-testid="button-ticket-none"
+                          >
+                            <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 ${
+                              !selectedRedemptionId ? "border-primary bg-primary" : "border-border bg-card"
+                            }`}>
+                              {!selectedRedemptionId && <CheckCircle2 className="w-4 h-4 text-white" />}
+                            </div>
+                            <span className="font-semibold text-foreground">None</span>
+                          </button>
+                          {availableTickets.map((item) => {
+                            const isSelected = selectedRedemptionId === item.redemption.id;
+                            const label =
+                              item.ticket.discountType === "percent"
+                                ? `${item.ticket.discountValue}% off`
+                                : `₱${(item.ticket.discountValue / 100).toFixed(0)} off`;
+                            return (
+                              <button
+                                type="button"
+                                key={item.redemption.id}
+                                onClick={() => setSelectedRedemptionId(item.redemption.id)}
+                                className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border-2 transition-all text-left ${
+                                  isSelected
+                                    ? "border-primary bg-primary/10 shadow-md"
+                                    : "border-border bg-card hover:border-primary/40 hover:bg-primary/5"
+                                }`}
+                                data-testid={`button-ticket-${item.redemption.id}`}
+                              >
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 ${
+                                    isSelected ? "border-primary bg-primary" : "border-border bg-card"
+                                  }`}>
+                                    {isSelected && <CheckCircle2 className="w-4 h-4 text-white" />}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <div className="font-semibold text-foreground truncate">{item.ticket.name}</div>
+                                    <div className="text-xs text-muted-foreground font-mono">{item.ticket.code} — {label}</div>
+                                  </div>
+                                </div>
+                                <Tag className="w-4 h-4 text-primary shrink-0" />
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Running total */}
                     <div className="w-full mb-3 rounded-2xl border border-border bg-card px-5 py-3 space-y-1.5">
                       <div className="flex items-center justify-between text-sm text-muted-foreground">
@@ -497,6 +590,15 @@ export default function ProductDetail() {
                           ))}
                           <div className="border-t border-border pt-1.5" />
                         </>
+                      )}
+                      {selectedTicket && discountAmount > 0 && (
+                        <div className="flex items-center justify-between text-sm text-emerald-600 dark:text-emerald-400 font-semibold">
+                          <span className="flex items-center gap-1">
+                            <Tag className="w-3.5 h-3.5" />
+                            {selectedTicket.ticket.name}
+                          </span>
+                          <span>-{formatPrice(discountAmount)}</span>
+                        </div>
                       )}
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-semibold text-foreground">Total</span>

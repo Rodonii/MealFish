@@ -33,7 +33,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { PaymentRequest, Product } from "@shared/schema";
 import { AddOnEditor, type AddOn } from "@/components/add-on-editor";
 
-const POINTS_RATE = 0.30; // pts per peso (must match server)
+const POINTS_RATE = 0.50; // pts per peso (must match server)
 
 function parseAddOns(jsonString: string | null | undefined): AddOn[] {
   try {

@@ -219,8 +219,8 @@ export async function registerRoutes(
         return res.status(404).json({ message: 'Product not found' });
       }
 
-      // Calculate points: 0.30 points per peso (i.e. 100 PHP × 0.30 = 30 pts)
-      const pointsEarned = Math.floor((product.price / 100) * 0.30);
+      // Calculate points: 0.50 points per peso (i.e. 100 PHP × 0.50 = 50 pts)
+      const pointsEarned = Math.floor((product.price / 100) * 0.50);
 
       const transaction = await storage.createTransaction({
         userId: user.id,
@@ -334,7 +334,7 @@ export async function registerRoutes(
         redemptionId = input.redemptionId;
       }
 
-      const pointsToEarn = Math.floor((total / 100) * 0.30);
+      const pointsToEarn = Math.floor((total / 100) * 0.50);
 
       const request = await storage.createPaymentRequest({
         userId: req.currentUser.id,

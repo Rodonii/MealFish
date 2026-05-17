@@ -75,10 +75,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 key={user.points}
                 initial={{ scale: 1.2, color: "var(--accent)" }}
                 animate={{ scale: 1, color: "inherit" }}
-                className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-accent/10 text-accent-foreground rounded-full border border-accent/20 shadow-sm"
+                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1 sm:py-2 bg-accent/10 text-accent-foreground rounded-full border border-accent/20 shadow-sm"
               >
-                <Award className="w-4 h-4 text-accent" />
-                <span className="font-bold text-accent text-sm sm:text-base">{user.points} pts</span>
+                <Award className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-accent" />
+                <span className="font-bold text-accent text-xs sm:text-sm md:text-base">{user.points} pts</span>
               </motion.div>
 
               <div className="flex items-center gap-1 sm:gap-3 sm:pl-4 sm:border-l">

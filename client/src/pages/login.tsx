@@ -67,7 +67,7 @@ export default function Login() {
               Welcome to <span className="text-gradient">FishTil</span>
             </h1>
             <p className="mt-3 text-muted-foreground">
-             (ANONG LALAGAY KO DITO?)
+             Pay with e-wallet and earn points instantly.
             </p>
           </div>
 
@@ -107,7 +107,7 @@ export default function Login() {
               className="w-full h-14 rounded-xl text-lg font-semibold bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-600/90 shadow-lg shadow-primary/25 transition-all hover:scale-[1.02] active:scale-[0.98]"
               disabled={isLoggingIn}
             >
-              {isLoggingIn ? "Connecting..." : "LEZGO!"}
+              {isLoggingIn ? "Lesgooo!..." : "Confirm!"}
               {!isLoggingIn && <ArrowRight className="ml-2 w-5 h-5" />}
             </Button>
           </form>

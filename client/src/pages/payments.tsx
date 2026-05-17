@@ -179,7 +179,7 @@ export default function Payments() {
                     <Package className="w-4 h-4 text-muted-foreground" />
                     <span className="font-medium" data-testid={`text-product-${id}`}>{item.productName}</span>
                   </div>
-                  <div className="text-xs text-muted-foreground sm:col-span-2">
+                  <div className="text-[11px] sm:text-xs text-muted-foreground sm:col-span-2">
                     Started {item.request.createdAt ? timeSince(item.request.createdAt) : "just now"} · Earns {item.request.pointsToEarn} pts
                   </div>
                 </div>

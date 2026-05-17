@@ -120,8 +120,8 @@ export default function History() {
                       <Calendar className="w-4 h-4 mr-1.5 opacity-70" />
                       {isValidDate ? format(date, "MMM d, yyyy • h:mm a") : 'Unknown date'}
                     </div>
-                    <div className="flex items-center text-accent font-semibold bg-accent/10 px-2.5 py-0.5 rounded-md">
-                      <Zap className="w-3.5 h-3.5 mr-1" />
+                    <div className="flex items-center text-accent font-semibold bg-accent/10 px-2 sm:px-2.5 py-0.5 rounded-md text-xs sm:text-sm">
+                      <Zap className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1" />
                       +{tx.pointsEarned} pts
                     </div>
                   </div>

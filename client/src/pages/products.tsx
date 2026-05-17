@@ -115,9 +115,9 @@ export default function Products() {
                     </p>
                     
                     <div className="flex items-center justify-between pt-4 border-t border-border/50">
-                      <span className="text-xs font-semibold text-accent flex items-center gap-1">
-                        <Plus className="w-3 h-3" />
-                        {Math.floor((product.price / 100) * 0.30)} pts
+                      <span className="text-[10px] sm:text-xs font-semibold text-accent flex items-center gap-1">
+                        <Plus className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                        {Math.floor((product.price / 100) * 0.50)} pts
                       </span>
                       <Button variant="ghost" size="sm" className="rounded-full bg-primary/5 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
                         <QrCode className="w-4 h-4 mr-2" />

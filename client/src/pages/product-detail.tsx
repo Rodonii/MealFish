@@ -31,7 +31,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { PaymentRequest, Product } from "@shared/schema";
 import { AddOnEditor, type AddOn } from "@/components/add-on-editor";
 
-const POINTS_RATE = 0.30; // pts per peso
+const POINTS_RATE = 0.50; // pts per peso
 
 function parseAddOns(jsonString: string | null | undefined): AddOn[] {
   try {
@@ -268,10 +268,10 @@ export default function ProductDetail() {
               transition={{ duration: 0.5, delay: 0.1 }}
               className="flex-1"
             >
-              <div className="flex flex-wrap items-center gap-3 mb-4">
-                <span className="px-3 py-1 bg-primary/10 text-primary text-sm font-bold rounded-full">{formatPrice(product.price)}</span>
-                <span className="px-3 py-1 bg-accent/10 text-accent text-sm font-bold rounded-full flex items-center gap-1">
-                  <Zap className="w-3 h-3" /> Earn {basePoints} pts
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4">
+                <span className="px-2 sm:px-3 py-1 bg-primary/10 text-primary text-xs sm:text-sm font-bold rounded-full">{formatPrice(product.price)}</span>
+                <span className="px-2 sm:px-3 py-1 bg-accent/10 text-accent text-xs sm:text-sm font-bold rounded-full flex items-center gap-1">
+                  <Zap className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> Earn {basePoints} pts
                 </span>
               </div>
 
@@ -505,9 +505,9 @@ export default function ProductDetail() {
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground">Points you'll earn</span>
-                        <span className="text-sm font-bold text-accent flex items-center gap-1" data-testid="text-running-points">
-                          <Zap className="w-3 h-3" /> {pointsToEarn} pts
+                        <span className="text-[11px] sm:text-xs text-muted-foreground">Points you'll earn</span>
+                        <span className="text-xs sm:text-sm font-bold text-accent flex items-center gap-1" data-testid="text-running-points">
+                          <Zap className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> {pointsToEarn} pts
                         </span>
                       </div>
                     </div>
@@ -610,7 +610,7 @@ export default function ProductDetail() {
                       <CheckCircle2 className="w-12 h-12 text-emerald-500" />
                     </div>
                     <h3 className="text-2xl font-display font-bold text-foreground mb-2">Payment confirmed!</h3>
-                    <p className="text-muted-foreground mb-6">You earned <span className="font-bold text-primary">{pollData?.request.pointsToEarn} pts</span>. Redirecting to history...</p>
+                    <p className="text-sm sm:text-base text-muted-foreground mb-6">You earned <span className="font-bold text-primary">{pollData?.request.pointsToEarn} pts</span>. Redirecting to history...</p>
                   </motion.div>
                 )}
 

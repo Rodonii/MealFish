@@ -3,16 +3,18 @@ import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { QrCode, ArrowRight } from "lucide-react";
+import { QrCode, ArrowRight, UserPlus, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@shared/routes";
 
 export default function Login() {
+  const [mode, setMode] = useState<"login" | "signup">("login");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const { login, isLoggingIn } = useAuth();
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const { login, register, isLoggingIn } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
@@ -27,7 +29,28 @@ export default function Login() {
       toast({ title: "Please enter username and password", variant: "destructive" });
       return;
     }
-    
+
+    if (mode === "signup") {
+      if (password !== confirmPassword) {
+        toast({ title: "Passwords don't match", variant: "destructive" });
+        return;
+      }
+      try {
+        await register(username.toLowerCase(), password);
+        setLocation("/products");
+        toast({ title: "Account created!", description: "Welcome to FishTil!" });
+      } catch (error: any) {
+        const msg = error.message || "Please try again.";
+        const isTaken = msg.toLowerCase().includes("already taken");
+        toast({
+          title: isTaken ? "Username taken" : "Signup failed",
+          description: msg,
+          variant: "destructive"
+        });
+      }
+      return;
+    }
+
     try {
       await login(username.toLowerCase(), password);
       setLocation("/products");
@@ -35,10 +58,10 @@ export default function Login() {
     } catch (error: any) {
       const msg = error.message || "Please try again.";
       const isTaken = msg.toLowerCase().includes("already taken");
-      toast({ 
-        title: isTaken ? "Username taken" : "Login failed", 
-        description: msg, 
-        variant: "destructive" 
+      toast({
+        title: isTaken ? "Username taken" : "Login failed",
+        description: msg,
+        variant: "destructive"
       });
     }
   };
@@ -104,14 +127,52 @@ export default function Login() {
               />
             </div>
             
-            <Button 
-              type="submit" 
+            {mode === "signup" && (
+              <div className="space-y-2">
+                <label htmlFor="confirm-password" className="text-sm font-medium text-foreground ml-1">
+                  Confirm password
+                </label>
+                <Input
+                  id="confirm-password"
+                  type="password"
+                  placeholder="Re-enter your password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="h-14 px-5 rounded-xl border-2 bg-card focus-visible:ring-primary/20 focus-visible:border-primary text-base transition-all"
+                  disabled={isLoggingIn}
+                />
+              </div>
+            )}
+
+            <Button
+              type="submit"
               className="w-full h-14 rounded-xl text-lg font-semibold bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-600/90 shadow-lg shadow-primary/25 transition-all hover:scale-[1.02] active:scale-[0.98]"
               disabled={isLoggingIn}
             >
-              {isLoggingIn ? "Lesgooo!..." : "Confirm!"}
-              {!isLoggingIn && <ArrowRight className="ml-2 w-5 h-5" />}
+              {isLoggingIn
+                ? (mode === "signup" ? "Creating..." : "Lesgooo!...")
+                : (mode === "signup" ? "Create account" : "Confirm!")}
+              {!isLoggingIn && (mode === "signup"
+                ? <UserPlus className="ml-2 w-5 h-5" />
+                : <ArrowRight className="ml-2 w-5 h-5" />)}
             </Button>
+
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setMode(mode === "login" ? "signup" : "login");
+                  setPassword("");
+                  setConfirmPassword("");
+                }}
+                className="text-sm text-primary hover:underline underline-offset-2 transition-colors"
+                disabled={isLoggingIn}
+              >
+                {mode === "login"
+                  ? "Don't have an account? Sign up"
+                  : "Already have an account? Log in"}
+              </button>
+            </div>
           </form>
         </div>
       </motion.div>

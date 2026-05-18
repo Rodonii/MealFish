@@ -92,6 +92,31 @@ export async function registerRoutes(
     }
   });
 
+  app.post(api.users.register.path, async (req, res) => {
+    try {
+      const input = api.users.register.input.parse(req.body);
+      const normalizedUsername = input.username.toLowerCase();
+      const existing = await storage.getUserByUsername(normalizedUsername);
+      if (existing) {
+        return res.status(409).json({ message: "Username already taken" });
+      }
+      const user = await storage.createUser({
+        username: input.username,
+        password: input.password,
+        isAdmin: normalizedUsername === "admin",
+      } as any);
+      res.status(201).json(user);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
   app.get(api.users.get.path, async (req, res) => {
     const user = await storage.getUser(Number(req.params.id));
     if (!user) {

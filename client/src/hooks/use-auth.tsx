@@ -14,6 +14,7 @@ export interface LocalUser {
 interface AuthContextType {
   user: LocalUser | null;
   login: (username: string, password: string) => Promise<void>;
+  register: (username: string, password: string) => Promise<void>;
   logout: () => void;
   updatePoints: (newTotal: number) => void;
   isLoggingIn: boolean;
@@ -60,8 +61,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   });
 
+  const registerMutation = useMutation({
+    mutationFn: async ({ username, password }: { username: string; password: string }) => {
+      const res = await fetch(api.users.register.path, {
+        method: api.users.register.method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to create account");
+      }
+      const rawData = await res.json();
+      return rawData as LocalUser;
+    },
+    onSuccess: (data) => {
+      setUser(data);
+      localStorage.setItem("scanshop_user", JSON.stringify(data));
+    }
+  });
+
   const login = async (username: string, password: string) => {
     await loginMutation.mutateAsync({ username, password });
+  };
+
+  const register = async (username: string, password: string) => {
+    await registerMutation.mutateAsync({ username, password });
   };
 
   const logout = () => {
@@ -84,9 +110,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider value={{ 
       user, 
       login, 
+      register,
       logout, 
       updatePoints,
-      isLoggingIn: loginMutation.isPending 
+      isLoggingIn: loginMutation.isPending || registerMutation.isPending
     }}>
       {children}
     </AuthContext.Provider>

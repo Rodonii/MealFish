@@ -25,6 +25,16 @@ export const api = {
         401: z.object({ message: z.string() }),
       },
     },
+    register: {
+      method: 'POST' as const,
+      path: '/api/users/register' as const,
+      input: z.object({ username: z.string(), password: z.string() }),
+      responses: {
+        201: z.custom<typeof users.$inferSelect>(),
+        409: z.object({ message: z.string() }),
+        400: errorSchemas.validation,
+      },
+    },
     get: {
       method: 'GET' as const,
       path: '/api/users/:id' as const,

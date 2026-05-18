@@ -564,6 +564,61 @@ export async function registerRoutes(
     }
   });
 
+  // ---- Chat ----
+  // Customer: get own messages (marks as read by customer)
+  app.get("/api/chat/messages", async (req, res) => {
+    const userId = parseInt(req.header("x-user-id") || "0");
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+    const messages = await storage.getChatMessages(userId);
+    await storage.markChatReadByCustomer(userId);
+    res.json(messages);
+  });
+
+  // Customer: send a message
+  app.post("/api/chat/messages", async (req, res) => {
+    const userId = parseInt(req.header("x-user-id") || "0");
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+    const { content } = req.body;
+    if (!content || typeof content !== "string" || !content.trim()) {
+      return res.status(400).json({ message: "Content required" });
+    }
+    const msg = await storage.sendChatMessage(userId, "customer", content.trim());
+    res.json(msg);
+  });
+
+  // Admin: list all threads
+  app.get("/api/chat/threads", requireAdmin, async (_req, res) => {
+    const threads = await storage.listChatThreads();
+    res.json(threads);
+  });
+
+  // Admin: get thread messages for a user (marks as read by admin)
+  app.get("/api/chat/threads/:userId", requireAdmin, async (req, res) => {
+    const uid = parseInt(req.params.userId);
+    if (!uid) return res.status(400).json({ message: "Invalid userId" });
+    const messages = await storage.getChatMessages(uid);
+    await storage.markChatReadByAdmin(uid);
+    res.json(messages);
+  });
+
+  // Admin: reply to a user thread
+  app.post("/api/chat/threads/:userId/reply", requireAdmin, async (req, res) => {
+    const uid = parseInt(req.params.userId);
+    if (!uid) return res.status(400).json({ message: "Invalid userId" });
+    const { content } = req.body;
+    if (!content || typeof content !== "string" || !content.trim()) {
+      return res.status(400).json({ message: "Content required" });
+    }
+    const msg = await storage.sendChatMessage(uid, "admin", content.trim());
+    res.json(msg);
+  });
+
+  // Admin: get unread count
+  app.get("/api/chat/unread", requireAdmin, async (_req, res) => {
+    const count = await storage.getAdminUnreadCount();
+    res.json({ count });
+  });
+
   return httpServer;
 }
 

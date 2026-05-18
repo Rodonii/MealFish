@@ -334,6 +334,75 @@ export const api = {
       },
     },
   },
+  chat: {
+    getMessages: {
+      method: 'GET' as const,
+      path: '/api/chat/messages' as const,
+      responses: {
+        200: z.array(z.object({
+          id: z.number(),
+          userId: z.number(),
+          senderType: z.string(),
+          content: z.string(),
+          isReadByAdmin: z.boolean(),
+          isReadByCustomer: z.boolean(),
+          createdAt: z.string().nullable(),
+        })),
+      },
+    },
+    sendMessage: {
+      method: 'POST' as const,
+      path: '/api/chat/messages' as const,
+      input: z.object({ content: z.string().min(1) }),
+      responses: {
+        200: z.object({ id: z.number() }),
+        400: z.object({ message: z.string() }),
+      },
+    },
+    getThreads: {
+      method: 'GET' as const,
+      path: '/api/chat/threads' as const,
+      responses: {
+        200: z.array(z.object({
+          userId: z.number(),
+          username: z.string(),
+          lastMessage: z.object({ content: z.string(), senderType: z.string(), createdAt: z.string().nullable() }),
+          unreadByAdmin: z.number(),
+        })),
+      },
+    },
+    getThreadMessages: {
+      method: 'GET' as const,
+      path: '/api/chat/threads/:userId' as const,
+      responses: {
+        200: z.array(z.object({
+          id: z.number(),
+          userId: z.number(),
+          senderType: z.string(),
+          content: z.string(),
+          isReadByAdmin: z.boolean(),
+          isReadByCustomer: z.boolean(),
+          createdAt: z.string().nullable(),
+        })),
+      },
+    },
+    adminReply: {
+      method: 'POST' as const,
+      path: '/api/chat/threads/:userId/reply' as const,
+      input: z.object({ content: z.string().min(1) }),
+      responses: {
+        200: z.object({ id: z.number() }),
+        400: z.object({ message: z.string() }),
+      },
+    },
+    getUnreadCount: {
+      method: 'GET' as const,
+      path: '/api/chat/unread' as const,
+      responses: {
+        200: z.object({ count: z.number() }),
+      },
+    },
+  },
 };
 
 export function buildUrl(path: string, params?: Record<string, string | number>): string {

@@ -78,6 +78,19 @@ export const redemptions = pgTable("redemptions", {
   redeemedAt: timestamp("redeemed_at").defaultNow(),
 });
 
+// Chat messages — one thread per customer user
+export const chatMessages = pgTable("chat_messages", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(), // the customer's userId (thread owner)
+  senderType: text("sender_type").notNull(), // "customer" | "admin"
+  content: text("content").notNull(),
+  isReadByAdmin: boolean("is_read_by_admin").notNull().default(false),
+  isReadByCustomer: boolean("is_read_by_customer").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type ChatMessage = typeof chatMessages.$inferSelect;
+
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, points: true, isAdmin: true });
 export const insertProductSchema = createInsertSchema(products).omit({ id: true });
 export const insertTransactionSchema = createInsertSchema(transactions).omit({ id: true, createdAt: true });

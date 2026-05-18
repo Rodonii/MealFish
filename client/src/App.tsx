@@ -18,6 +18,8 @@ import Payments from "./pages/payments";
 import History from "./pages/history";
 import Rewards from "./pages/rewards";
 import AdminTickets from "./pages/admin-tickets";
+import AdminChat from "./pages/admin-chat";
+import { ChatWidget } from "./components/chat-widget";
 
 function ProtectedRoute({ component: Component, ...rest }: { component: any, path: string }) {
   const { user } = useAuth();
@@ -40,6 +42,7 @@ function Router() {
 
   return (
     <Layout>
+      <ChatWidget />
       <Switch>
         <Route path="/" component={Login} />
         <Route path="/products">
@@ -65,6 +68,9 @@ function Router() {
         </Route>
         <Route path="/admin/tickets">
           {() => <ProtectedRoute component={AdminTickets} path="/admin/tickets" />}
+        </Route>
+        <Route path="/admin/chat">
+          {() => <ProtectedRoute component={AdminChat} path="/admin/chat" />}
         </Route>
         <Route component={NotFound} />
       </Switch>

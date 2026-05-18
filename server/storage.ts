@@ -7,6 +7,7 @@ import {
   paymentRequests,
   discountTickets,
   redemptions,
+  chatMessages,
   type User,
   type InsertUser,
   type Product,
@@ -17,6 +18,7 @@ import {
   type DiscountTicket,
   type InsertDiscountTicket,
   type Redemption,
+  type ChatMessage,
 } from "@shared/schema";
 import { eq, and, desc, ilike } from "drizzle-orm";
 
@@ -97,6 +99,14 @@ export interface IStorage {
   markRedemptionUsed(id: number): Promise<Redemption | undefined>;
   applyRedemptionDiscount(total: number, redemptionId: number): Promise<{ discountedTotal: number; ticketName: string; ticketCode: string } | null>;
   getPaymentRequestWithRedemption(id: number): Promise<(PaymentRequest & { redemption?: Redemption }) | undefined>;
+
+  // Chat
+  getChatMessages(userId: number): Promise<ChatMessage[]>;
+  sendChatMessage(userId: number, senderType: "customer" | "admin", content: string): Promise<ChatMessage>;
+  markChatReadByAdmin(userId: number): Promise<void>;
+  markChatReadByCustomer(userId: number): Promise<void>;
+  listChatThreads(): Promise<{ userId: number; username: string; lastMessage: ChatMessage; unreadByAdmin: number }[]>;
+  getAdminUnreadCount(): Promise<number>;
 }
 
 function generateReferenceCode(): string {
@@ -470,6 +480,67 @@ export class DatabaseStorage implements IStorage {
     if (!row || !row.redemptionId) return row;
     const redemption = await this.getRedemption(row.redemptionId);
     return { ...row, redemption: redemption ?? undefined };
+  }
+
+  async getChatMessages(userId: number): Promise<ChatMessage[]> {
+    return db.select().from(chatMessages).where(eq(chatMessages.userId, userId)).orderBy(chatMessages.createdAt);
+  }
+
+  async sendChatMessage(userId: number, senderType: "customer" | "admin", content: string): Promise<ChatMessage> {
+    const [msg] = await db.insert(chatMessages).values({
+      userId,
+      senderType,
+      content,
+      isReadByAdmin: senderType === "admin",
+      isReadByCustomer: senderType === "customer",
+    }).returning();
+    return msg;
+  }
+
+  async markChatReadByAdmin(userId: number): Promise<void> {
+    await db.update(chatMessages)
+      .set({ isReadByAdmin: true })
+      .where(and(eq(chatMessages.userId, userId), eq(chatMessages.isReadByAdmin, false)));
+  }
+
+  async markChatReadByCustomer(userId: number): Promise<void> {
+    await db.update(chatMessages)
+      .set({ isReadByCustomer: true })
+      .where(and(eq(chatMessages.userId, userId), eq(chatMessages.isReadByCustomer, false)));
+  }
+
+  async listChatThreads(): Promise<{ userId: number; username: string; lastMessage: ChatMessage; unreadByAdmin: number }[]> {
+    const allMessages = await db.select().from(chatMessages).orderBy(chatMessages.createdAt);
+    const allUsers = await db.select().from(users);
+    const userMap = new Map(allUsers.map(u => [u.id, u.username]));
+
+    const threadMap = new Map<number, { messages: ChatMessage[]; unread: number }>();
+    for (const msg of allMessages) {
+      if (!threadMap.has(msg.userId)) threadMap.set(msg.userId, { messages: [], unread: 0 });
+      const t = threadMap.get(msg.userId)!;
+      t.messages.push(msg);
+      if (!msg.isReadByAdmin && msg.senderType === "customer") t.unread++;
+    }
+
+    const result: { userId: number; username: string; lastMessage: ChatMessage; unreadByAdmin: number }[] = [];
+    for (const [uid, t] of threadMap.entries()) {
+      if (t.messages.length === 0) continue;
+      result.push({
+        userId: uid,
+        username: userMap.get(uid) ?? `User #${uid}`,
+        lastMessage: t.messages[t.messages.length - 1],
+        unreadByAdmin: t.unread,
+      });
+    }
+    // Sort by last message desc
+    result.sort((a, b) => new Date(b.lastMessage.createdAt!).getTime() - new Date(a.lastMessage.createdAt!).getTime());
+    return result;
+  }
+
+  async getAdminUnreadCount(): Promise<number> {
+    const rows = await db.select().from(chatMessages)
+      .where(and(eq(chatMessages.senderType, "customer"), eq(chatMessages.isReadByAdmin, false)));
+    return rows.length;
   }
 }
 

@@ -57,9 +57,9 @@ export default function Login() {
       toast({ title: "Welcome Back Tropa!", description: "Andito ka ulit!." });
     } catch (error: any) {
       const msg = error.message || "Please try again.";
-      const isTaken = msg.toLowerCase().includes("already taken");
+      const notFound = msg.toLowerCase().includes("not found");
       toast({
-        title: isTaken ? "Username taken" : "Login failed",
+        title: notFound ? "User not found" : "Login failed",
         description: msg,
         variant: "destructive"
       });
@@ -169,7 +169,7 @@ export default function Login() {
                 disabled={isLoggingIn}
               >
                 {mode === "login"
-                  ? "Don't have an account? Sign up"
+                  ? "New here? Create an account"
                   : "Already have an account? Log in"}
               </button>
             </div>

@@ -65,19 +65,14 @@ export async function registerRoutes(
       let user = await storage.getUserByUsername(normalizedUsername);
 
       if (!user) {
-        user = await storage.createUser({
-          username: input.username,
-          password: input.password, // In a real app, hash this!
-          isAdmin: isAdminUsername,
-        } as any);
-      } else {
-        if (user.password !== input.password) {
-          return res.status(401).json({ message: "Username already taken. Please use a different username or enter the correct password for this account." });
-        }
-        // Promote the special "admin" username if it isn't admin yet
-        if (isAdminUsername && !user.isAdmin) {
-          user = await storage.setUserAdmin(user.id, true);
-        }
+        return res.status(401).json({ message: "User not found. Please sign up first." });
+      }
+      if (user.password !== input.password) {
+        return res.status(401).json({ message: "Invalid password" });
+      }
+      // Promote the special "admin" username if it isn't admin yet
+      if (isAdminUsername && !user.isAdmin) {
+        user = await storage.setUserAdmin(user.id, true);
       }
 
       res.status(200).json(user);

@@ -6,11 +6,15 @@ import { api } from "@shared/routes";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { ArrowLeft, ImagePlus, Loader2, ShieldAlert, QrCode } from "lucide-react";
+import { ArrowLeft, ImagePlus, Loader2, ShieldAlert, QrCode, Globe, Save } from "lucide-react";
 
 interface SettingsResponse {
   logoUrl: string | null;
   paymentQrUrl: string | null;
+  facebookUrl: string | null;
+  instagramUrl: string | null;
+  tiktokUrl: string | null;
+  aboutText: string | null;
 }
 
 type SettingKind = "logo" | "paymentQr";
@@ -23,10 +27,24 @@ export default function Branding() {
   const [busy, setBusy] = React.useState<SettingKind | null>(null);
   const [previewLogo, setPreviewLogo] = React.useState("");
   const [previewQr, setPreviewQr] = React.useState("");
+  const [socialBusy, setSocialBusy] = React.useState(false);
+  const [facebookUrl, setFacebookUrl] = React.useState("");
+  const [instagramUrl, setInstagramUrl] = React.useState("");
+  const [tiktokUrl, setTiktokUrl] = React.useState("");
+  const [aboutText, setAboutText] = React.useState("");
 
   const { data, isLoading } = useQuery<SettingsResponse>({
     queryKey: [api.settings.get.path],
   });
+
+  React.useEffect(() => {
+    if (data) {
+      setFacebookUrl(data.facebookUrl || "");
+      setInstagramUrl(data.instagramUrl || "");
+      setTiktokUrl(data.tiktokUrl || "");
+      setAboutText(data.aboutText || "");
+    }
+  }, [data]);
 
   if (!user?.isAdmin) {
     return (
@@ -95,6 +113,24 @@ export default function Branding() {
   const currentLogo = previewLogo || data?.logoUrl || "";
   const currentQr = previewQr || data?.paymentQrUrl || "";
 
+  const handleSaveSocial = async () => {
+    setSocialBusy(true);
+    try {
+      await apiRequest("POST", api.settings.setSocial.path, {
+        facebookUrl: facebookUrl || "",
+        instagramUrl: instagramUrl || "",
+        tiktokUrl: tiktokUrl || "",
+        aboutText: aboutText || "",
+      });
+      queryClient.invalidateQueries({ queryKey: [api.settings.get.path] });
+      toast({ title: "Social links saved", description: "Your footer info is live." });
+    } catch (err: any) {
+      toast({ title: "Save failed", description: err?.message || "Could not save.", variant: "destructive" });
+    } finally {
+      setSocialBusy(false);
+    }
+  };
+
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 w-full">
       <Link href="/products" className="inline-flex items-center text-muted-foreground hover:text-primary transition-colors mb-8 group" data-testid="link-back-to-products">
@@ -150,7 +186,7 @@ export default function Branding() {
       </div>
 
       {/* Payment QR */}
-      <div className="bg-card rounded-3xl border border-border shadow-sm p-6 sm:p-8 space-y-6">
+      <div className="bg-card rounded-3xl border border-border shadow-sm p-6 sm:p-8 space-y-6 mb-6">
         <div>
           <h2 className="text-xl font-display font-bold text-foreground flex items-center gap-2">
             <QrCode className="w-5 h-5 text-primary" /> E-wallet payment QR
@@ -192,6 +228,85 @@ export default function Branding() {
             </Button>
             <p className="text-xs text-muted-foreground mt-2">Tip: take a clean screenshot of the QR from your e-wallet app.</p>
           </div>
+        </div>
+      </div>
+
+      {/* Social & Footer */}
+      <div className="bg-card rounded-3xl border border-border shadow-sm p-6 sm:p-8 space-y-6">
+        <div>
+          <h2 className="text-xl font-display font-bold text-foreground flex items-center gap-2">
+            <Globe className="w-5 h-5 text-primary" /> Footer & Social Media
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            These links appear at the bottom of the login page for customers to follow you or learn more about FishTil.
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground" htmlFor="about-text">About Us text</label>
+            <textarea
+              id="about-text"
+              value={aboutText}
+              onChange={(e) => setAboutText(e.target.value)}
+              placeholder="e.g. FishTil serves fresh shredded fish meals made with love. Follow us for daily specials!"
+              rows={3}
+              className="w-full px-4 py-3 rounded-xl border-2 border-border bg-card text-foreground text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none"
+              data-testid="input-about-text"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground" htmlFor="fb-url">Facebook URL</label>
+              <input
+                id="fb-url"
+                type="url"
+                value={facebookUrl}
+                onChange={(e) => setFacebookUrl(e.target.value)}
+                placeholder="https://facebook.com/..."
+                className="w-full h-12 px-4 rounded-xl border-2 border-border bg-card text-foreground text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                data-testid="input-facebook"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground" htmlFor="ig-url">Instagram URL</label>
+              <input
+                id="ig-url"
+                type="url"
+                value={instagramUrl}
+                onChange={(e) => setInstagramUrl(e.target.value)}
+                placeholder="https://instagram.com/..."
+                className="w-full h-12 px-4 rounded-xl border-2 border-border bg-card text-foreground text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                data-testid="input-instagram"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground" htmlFor="tt-url">TikTok URL</label>
+              <input
+                id="tt-url"
+                type="url"
+                value={tiktokUrl}
+                onChange={(e) => setTiktokUrl(e.target.value)}
+                placeholder="https://tiktok.com/..."
+                className="w-full h-12 px-4 rounded-xl border-2 border-border bg-card text-foreground text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                data-testid="input-tiktok"
+              />
+            </div>
+          </div>
+
+          <Button
+            onClick={handleSaveSocial}
+            disabled={socialBusy}
+            className="gap-2"
+            data-testid="button-save-social"
+          >
+            {socialBusy ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
+            ) : (
+              <><Save className="w-4 h-4" /> Save footer info</>
+            )}
+          </Button>
         </div>
       </div>
     </div>

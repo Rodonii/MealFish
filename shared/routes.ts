@@ -133,6 +133,20 @@ export const api = {
         400: errorSchemas.validation,
       },
     },
+    setSocial: {
+      method: 'POST' as const,
+      path: '/api/settings/social' as const,
+      input: z.object({
+        facebookUrl: z.string().optional(),
+        instagramUrl: z.string().optional(),
+        tiktokUrl: z.string().optional(),
+        aboutText: z.string().optional(),
+      }),
+      responses: {
+        200: z.object({ success: z.boolean() }),
+        400: errorSchemas.validation,
+      },
+    },
   },
   transactions: {
     purchase: {

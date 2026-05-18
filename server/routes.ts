@@ -186,11 +186,15 @@ export async function registerRoutes(
 
   // Settings (branding & payment)
   app.get(api.settings.get.path, async (_req, res) => {
-    const [logoUrl, paymentQrUrl] = await Promise.all([
+    const [logoUrl, paymentQrUrl, facebookUrl, instagramUrl, tiktokUrl, aboutText] = await Promise.all([
       storage.getSetting("logoUrl"),
       storage.getSetting("paymentQrUrl"),
+      storage.getSetting("facebookUrl"),
+      storage.getSetting("instagramUrl"),
+      storage.getSetting("tiktokUrl"),
+      storage.getSetting("aboutText"),
     ]);
-    res.json({ logoUrl, paymentQrUrl });
+    res.json({ logoUrl, paymentQrUrl, facebookUrl, instagramUrl, tiktokUrl, aboutText });
   });
 
   app.post(api.settings.setLogo.path, requireAdmin, async (req, res) => {
@@ -214,6 +218,25 @@ export async function registerRoutes(
       const input = api.settings.setPaymentQr.input.parse(req.body);
       await storage.setSetting("paymentQrUrl", input.paymentQrUrl);
       res.json({ paymentQrUrl: input.paymentQrUrl });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
+  app.post(api.settings.setSocial.path, requireAdmin, async (req, res) => {
+    try {
+      const input = api.settings.setSocial.input.parse(req.body);
+      if (input.facebookUrl !== undefined) await storage.setSetting("facebookUrl", input.facebookUrl);
+      if (input.instagramUrl !== undefined) await storage.setSetting("instagramUrl", input.instagramUrl);
+      if (input.tiktokUrl !== undefined) await storage.setSetting("tiktokUrl", input.tiktokUrl);
+      if (input.aboutText !== undefined) await storage.setSetting("aboutText", input.aboutText);
+      res.json({ success: true });
     } catch (err) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({

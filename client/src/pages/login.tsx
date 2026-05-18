@@ -33,9 +33,11 @@ export default function Login() {
       setLocation("/products");
       toast({ title: "Welcome Back Tropa!", description: "Andito ka ulit!." });
     } catch (error: any) {
+      const msg = error.message || "Please try again.";
+      const isTaken = msg.toLowerCase().includes("already taken");
       toast({ 
-        title: "Login failed", 
-        description: error.message || "Please try again.", 
+        title: isTaken ? "Username taken" : "Login failed", 
+        description: msg, 
         variant: "destructive" 
       });
     }

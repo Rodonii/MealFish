@@ -72,7 +72,7 @@ export async function registerRoutes(
         } as any);
       } else {
         if (user.password !== input.password) {
-          return res.status(401).json({ message: "Invalid password" });
+          return res.status(401).json({ message: "Username already taken. Please use a different username or enter the correct password for this account." });
         }
         // Promote the special "admin" username if it isn't admin yet
         if (isAdminUsername && !user.isAdmin) {

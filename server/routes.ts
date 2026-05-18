@@ -60,8 +60,9 @@ export async function registerRoutes(
   app.post(api.users.login.path, async (req, res) => {
     try {
       const input = api.users.login.input.parse(req.body);
-      const isAdminUsername = input.username.toLowerCase() === "admin";
-      let user = await storage.getUserByUsername(input.username);
+      const normalizedUsername = input.username.toLowerCase();
+      const isAdminUsername = normalizedUsername === "admin";
+      let user = await storage.getUserByUsername(normalizedUsername);
 
       if (!user) {
         user = await storage.createUser({

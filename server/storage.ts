@@ -18,7 +18,7 @@ import {
   type InsertDiscountTicket,
   type Redemption,
 } from "@shared/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, ilike } from "drizzle-orm";
 
 export interface PendingPaymentSummary {
   request: PaymentRequest;
@@ -115,12 +115,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
+    const [user] = await db.select().from(users).where(ilike(users.username, username));
     return user;
   }
 
   async createUser(insertUser: InsertUser & { isAdmin?: boolean }): Promise<User> {
-    const [user] = await db.insert(users).values(insertUser).returning();
+    const normalized = { ...insertUser, username: insertUser.username.toLowerCase() };
+    const [user] = await db.insert(users).values(normalized).returning();
     return user;
   }
 

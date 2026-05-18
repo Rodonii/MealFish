@@ -29,7 +29,7 @@ export default function Login() {
     }
     
     try {
-      await login(username, password);
+      await login(username.toLowerCase(), password);
       setLocation("/products");
       toast({ title: "Welcome Back Tropa!", description: "Andito ka ulit!." });
     } catch (error: any) {

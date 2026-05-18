@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { QrCode, ArrowRight, UserPlus, LogIn } from "lucide-react";
+import { QrCode, ArrowRight, UserPlus, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -14,6 +14,8 @@ export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const { login, register, isLoggingIn } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -116,31 +118,53 @@ export default function Login() {
               <label htmlFor="password" className="text-sm font-medium text-foreground ml-1">
                 Password
               </label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="h-14 px-5 rounded-xl border-2 bg-card focus-visible:ring-primary/20 focus-visible:border-primary text-base transition-all"
-                disabled={isLoggingIn}
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="h-14 px-5 pr-12 rounded-xl border-2 bg-card focus-visible:ring-primary/20 focus-visible:border-primary text-base transition-all"
+                  disabled={isLoggingIn}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((s) => !s)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  tabIndex={-1}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
             </div>
-            
+
             {mode === "signup" && (
               <div className="space-y-2">
                 <label htmlFor="confirm-password" className="text-sm font-medium text-foreground ml-1">
                   Confirm password
                 </label>
-                <Input
-                  id="confirm-password"
-                  type="password"
-                  placeholder="Re-enter your password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="h-14 px-5 rounded-xl border-2 bg-card focus-visible:ring-primary/20 focus-visible:border-primary text-base transition-all"
-                  disabled={isLoggingIn}
-                />
+                <div className="relative">
+                  <Input
+                    id="confirm-password"
+                    type={showConfirm ? "text" : "password"}
+                    placeholder="Re-enter your password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="h-14 px-5 pr-12 rounded-xl border-2 bg-card focus-visible:ring-primary/20 focus-visible:border-primary text-base transition-all"
+                    disabled={isLoggingIn}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirm((s) => !s)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    tabIndex={-1}
+                    aria-label={showConfirm ? "Hide confirm password" : "Show confirm password"}
+                  >
+                    {showConfirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
               </div>
             )}
 

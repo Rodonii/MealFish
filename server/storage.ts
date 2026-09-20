@@ -79,6 +79,7 @@ export interface IStorage {
     notes?: string;
   }): Promise<PaymentRequest>;
   getPaymentRequest(id: number): Promise<PaymentRequest | undefined>;
+  getPendingPaymentRequest(userId: number): Promise<PaymentRequest | undefined>;
   updatePaymentRequestProof(id: number, proofImageUrl: string): Promise<PaymentRequest | undefined>;
   listPendingPaymentRequests(): Promise<PendingPaymentSummary[]>;
   resolvePaymentRequest(id: number, action: "confirm" | "reject"): Promise<ResolvePaymentResult>;
@@ -213,6 +214,8 @@ export class DatabaseStorage implements IStorage {
     amount: number;
     pointsToEarn: number;
     selectedAddOns?: string;
+    redemptionId?: number;
+    notes?: string;
   }): Promise<PaymentRequest> {
     for (let attempt = 0; attempt < 5; attempt++) {
       const referenceCode = generateReferenceCode();
@@ -241,6 +244,16 @@ export class DatabaseStorage implements IStorage {
 
   async getPaymentRequest(id: number): Promise<PaymentRequest | undefined> {
     const [row] = await db.select().from(paymentRequests).where(eq(paymentRequests.id, id));
+    return row;
+  }
+
+  async getPendingPaymentRequest(userId: number): Promise<PaymentRequest | undefined> {
+    const [row] = await db
+      .select()
+      .from(paymentRequests)
+      .where(and(eq(paymentRequests.userId, userId), eq(paymentRequests.status, "pending")))
+      .orderBy(desc(paymentRequests.createdAt))
+      .limit(1);
     return row;
   }
 
@@ -523,7 +536,7 @@ export class DatabaseStorage implements IStorage {
     }
 
     const result: { userId: number; username: string; lastMessage: ChatMessage; unreadByAdmin: number }[] = [];
-    for (const [uid, t] of threadMap.entries()) {
+    for (const [uid, t] of Array.from(threadMap.entries())) {
       if (t.messages.length === 0) continue;
       result.push({
         userId: uid,

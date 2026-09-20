@@ -320,10 +320,29 @@ export async function registerRoutes(
     res.json(pending);
   });
 
+  // Customer restores the one payment they already started after a refresh/navigation.
+  app.get(api.payments.minePending.path, requireUser, async (req: any, res) => {
+    const request = await storage.getPendingPaymentRequest(req.currentUser.id);
+    if (!request) {
+      return res.json(null);
+    }
+
+    const product = await storage.getProduct(request.productId);
+    res.json({ request, product: product ?? null });
+  });
+
   // Customer creates a new pending payment request
   app.post(api.payments.create.path, requireUser, async (req: any, res) => {
     try {
       const input = api.payments.create.input.parse(req.body);
+      const existingPending = await storage.getPendingPaymentRequest(req.currentUser.id);
+      if (existingPending) {
+        return res.status(409).json({
+          message: "You already have a pending purchase. Finish it before starting another.",
+          requestId: existingPending.id,
+        });
+      }
+
       const product = await storage.getProduct(input.productId);
       if (!product) {
         return res.status(404).json({ message: "Product not found" });

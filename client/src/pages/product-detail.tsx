@@ -74,6 +74,16 @@ export default function ProductDetail() {
     queryKey: [api.settings.get.path],
   });
 
+  type PendingPaymentResponse = { request: PaymentRequest; product: Product | null };
+  const {
+    data: pendingPayment,
+    isLoading: pendingPaymentLoading,
+  } = useQuery<PendingPaymentResponse | null>({
+    queryKey: [api.payments.minePending.path],
+    enabled: !!user && !user.isAdmin,
+    refetchInterval: 2500,
+  });
+
   // Fetch available (unused) ticket redemptions for the user
   const { data: availableTickets = [] } = useQuery<
     Array<{ redemption: { id: number; pointsSpent: number }; ticket: { id: number; name: string; code: string; discountType: string; discountValue: number } }>
@@ -100,9 +110,18 @@ export default function ProductDetail() {
       setPaymentRequestId(req.id);
       setReferenceCode(req.referenceCode);
       setResolved(false);
+      setProofUploaded(!!req.proofImageUrl);
+      queryClient.invalidateQueries({ queryKey: [api.payments.minePending.path] });
     },
     onError: (err: any) => {
-      toast({ title: "Could not start payment", description: err?.message || "Please try again.", variant: "destructive" });
+      queryClient.invalidateQueries({ queryKey: [api.payments.minePending.path] });
+      toast({
+        title: "Could not start payment",
+        description: err?.message?.includes("pending purchase")
+          ? err.message.replace(/^\d+:\s*/, "")
+          : err?.message || "Please try again.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -133,6 +152,7 @@ export default function ProductDetail() {
 
     if (status === "confirmed") {
       setResolved(true);
+      queryClient.invalidateQueries({ queryKey: [api.payments.minePending.path] });
       if (pollData.newPointsTotal != null) {
         updatePoints(pollData.newPointsTotal);
       }
@@ -144,6 +164,7 @@ export default function ProductDetail() {
       setTimeout(() => setLocation("/history"), 1800);
     } else if (status === "rejected") {
       setResolved(true);
+      queryClient.invalidateQueries({ queryKey: [api.payments.minePending.path] });
       toast({
         title: "Payment rejected",
         description: "The owner did not see your payment. You can start a new one.",
@@ -161,6 +182,19 @@ export default function ProductDetail() {
     setAdminEditing(false);
     setSelectedRedemptionId(null);
   }, [id]);
+
+  // Rehydrate the payment view from the server so a refresh cannot hide an
+  // already-started purchase. The active request is the only order the
+  // customer may have at a time.
+  React.useEffect(() => {
+    if (!pendingPayment?.request || paymentRequestId != null) return;
+    if (pendingPayment.request.productId !== Number(id)) return;
+
+    setPaymentRequestId(pendingPayment.request.id);
+    setReferenceCode(pendingPayment.request.referenceCode);
+    setResolved(false);
+    setProofUploaded(!!pendingPayment.request.proofImageUrl);
+  }, [pendingPayment, paymentRequestId, id]);
 
   React.useEffect(() => {
     if (cooldownRemaining > 0) {
@@ -300,6 +334,10 @@ export default function ProductDetail() {
   const isConfirmed = status === "confirmed";
   const isRejected = status === "rejected";
   const isWaiting = isPaymentActive && !isConfirmed && !isRejected;
+  const hasOtherPendingPurchase =
+    !user?.isAdmin &&
+    !!pendingPayment?.request &&
+    pendingPayment.request.productId !== Number(id);
 
   // Add-ons from the locked-in payment request (for the waiting/confirmed view)
   const lockedAddOns = parseAddOns((pollData?.request as any)?.selectedAddOns);
@@ -463,6 +501,50 @@ export default function ProductDetail() {
               className="w-full max-w-sm mx-auto flex flex-col items-center z-10"
             >
               <AnimatePresence mode="wait">
+                {pendingPaymentLoading ? (
+                  <motion.div
+                    key="checking-pending"
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    className="w-full flex flex-col items-center text-center py-12"
+                  >
+                    <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
+                    <p className="text-sm font-medium text-muted-foreground">Checking your active purchase...</p>
+                  </motion.div>
+                ) : hasOtherPendingPurchase ? (
+                  <motion.div
+                    key="other-pending"
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    className="w-full flex flex-col items-center text-center"
+                    data-testid="panel-other-pending"
+                  >
+                    <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-6 border border-primary/20">
+                      <Clock className="w-10 h-10 text-primary" />
+                    </div>
+                    <h3 className="text-2xl font-display font-bold text-foreground mb-2">Purchase already pending</h3>
+                    <p className="text-muted-foreground mb-5">
+                      Finish your current purchase before adding another meal.
+                    </p>
+                    <div className="w-full rounded-2xl border border-primary/20 bg-primary/5 px-5 py-4 text-left mb-6">
+                      <div className="text-xs uppercase tracking-wide text-muted-foreground font-bold mb-1">Current order</div>
+                      <div className="font-semibold text-foreground">
+                        {pendingPayment?.product?.name ?? "Your meal"}
+                      </div>
+                      <div className="text-sm text-muted-foreground mt-1">
+                        {formatPrice(pendingPayment!.request.amount)} · Ref {pendingPayment!.request.referenceCode}
+                      </div>
+                    </div>
+                    {pendingPayment?.product ? (
+                      <Link href={`/products/${pendingPayment.product.id}`} className="w-full">
+                        <Button className="w-full h-12 rounded-2xl" data-testid="button-view-pending">
+                          View pending purchase
+                        </Button>
+                      </Link>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">Your pending purchase is still being reviewed.</p>
+                    )}
+                  </motion.div>
+                ) : (
+                  <>
                 {/* No payment QR uploaded — fall back to demo flow */}
                 {!paymentQrUrl && (
                   <motion.div
@@ -803,14 +885,9 @@ export default function ProductDetail() {
                       Your points will load automatically once the owner sees the payment.
                     </p>
 
-                    <Button
-                      variant="ghost"
-                      onClick={handleStartOver}
-                      className="mt-4 text-muted-foreground"
-                      data-testid="button-cancel"
-                    >
-                      Cancel
-                    </Button>
+                    <p className="mt-4 text-xs text-muted-foreground text-center">
+                      This purchase will stay here until the owner confirms or rejects it.
+                    </p>
                   </motion.div>
                 )}
 
@@ -845,6 +922,8 @@ export default function ProductDetail() {
                       Try again
                     </Button>
                   </motion.div>
+                )}
+                  </>
                 )}
               </AnimatePresence>
             </motion.div>

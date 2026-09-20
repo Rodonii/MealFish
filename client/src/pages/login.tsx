@@ -98,7 +98,7 @@ export default function Login() {
               </div>
             )}
             <h1 className="text-3xl font-display font-bold text-foreground tracking-tight">
-              Welcome to <span className="text-gradient">FishTil</span>
+              Welcome to <span className="text-gradient">Meal'Fish</span>
             </h1>
             <p className="mt-3 text-muted-foreground">
              Pay with e-wallet and earn points instantly.

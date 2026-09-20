@@ -52,7 +52,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </div>
               )}
               <span className="font-display font-bold text-xl tracking-tight text-foreground">
-                Fish<span className="text-primary">Til</span>
+                Meal'<span className="text-primary">Fish</span>
               </span>
             </Link>
 

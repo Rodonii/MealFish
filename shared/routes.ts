@@ -193,6 +193,16 @@ export const api = {
         404: errorSchemas.notFound,
       },
     },
+    minePending: {
+      method: 'GET' as const,
+      path: '/api/payments/mine/pending' as const,
+      responses: {
+        200: z.object({
+          request: z.custom<typeof paymentRequests.$inferSelect>(),
+          product: z.custom<typeof products.$inferSelect>().nullable(),
+        }).nullable(),
+      },
+    },
     status: {
       method: 'GET' as const,
       path: '/api/payments/status/:id' as const,

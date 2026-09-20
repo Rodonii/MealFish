@@ -1,0 +1,1 @@
+- [Backend verification](backend-verification.md) — restart the single dev workflow after server-side edits; client HMR alone does not reload Express routes.

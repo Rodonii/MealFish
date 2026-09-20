@@ -80,7 +80,7 @@ export function ChatWidget() {
             <div className="flex items-center justify-between px-4 py-3 bg-primary text-primary-foreground">
               <div className="flex items-center gap-2">
                 <MessageCircle className="w-4 h-4" />
-                <span className="font-semibold text-sm">Chat with FishTil</span>
+                <span className="font-semibold text-sm">Chat with Staff</span>
               </div>
               <div className="flex items-center gap-1">
                 <button
@@ -120,7 +120,7 @@ export function ChatWidget() {
                       data-testid={`msg-${msg.id}`}
                     >
                       {msg.senderType === "admin" && (
-                        <span className="block text-[10px] font-semibold text-primary mb-0.5">FishTil</span>
+                        <span className="block text-[10px] font-semibold text-primary mb-0.5">Meal'Fish</span>
                       )}
                       {msg.content}
                       <span className={`block text-[10px] mt-0.5 ${msg.senderType === "customer" ? "text-primary-foreground/60" : "text-muted-foreground"}`}>

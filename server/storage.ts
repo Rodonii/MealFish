@@ -330,49 +330,71 @@ export class DatabaseStorage implements IStorage {
     id: number,
     action: "confirm" | "reject",
   ): Promise<ResolvePaymentResult> {
-    const existing = await this.getPaymentRequest(id);
-    if (!existing) throw new Error("Payment request not found");
-    if (existing.status !== "pending") throw new Error(`Payment is already ${existing.status}`);
+    return db.transaction(async (tx) => {
+      // Lock the request before checking its status. Two admin clicks (or
+      // retries) must never both create a transaction for the same payment.
+      const [existing] = await tx
+        .select()
+        .from(paymentRequests)
+        .where(eq(paymentRequests.id, id))
+        .for("update");
 
-    if (action === "reject") {
-      const [updated] = await db
-        .update(paymentRequests)
-        .set({ status: "rejected" })
-        .where(and(eq(paymentRequests.id, id), eq(paymentRequests.status, "pending")))
+      if (!existing) throw new Error("Payment request not found");
+
+      // A repeated confirm is safe and returns the already-credited balance.
+      // This makes retries idempotent instead of awarding points twice.
+      if (existing.status !== "pending") {
+        if (action === "confirm" && existing.status === "confirmed") {
+          const [owner] = await tx.select().from(users).where(eq(users.id, existing.userId));
+          return { request: existing, newPointsTotal: owner?.points ?? null };
+        }
+        throw new Error(`Payment is already ${existing.status}`);
+      }
+
+      if (action === "reject") {
+        const [updated] = await tx
+          .update(paymentRequests)
+          .set({ status: "rejected" })
+          .where(eq(paymentRequests.id, id))
+          .returning();
+        return { request: updated, newPointsTotal: null };
+      }
+
+      // Lock the customer row too, so two different payments for the same
+      // customer cannot overwrite each other's points balance.
+      const [user] = await tx
+        .select()
+        .from(users)
+        .where(eq(users.id, existing.userId))
+        .for("update");
+      if (!user) throw new Error("Customer no longer exists");
+
+      const [transaction] = await tx
+        .insert(transactions)
+        .values({
+          userId: existing.userId,
+          productId: existing.productId,
+          amount: existing.amount,
+          pointsEarned: existing.pointsToEarn,
+          selectedAddOns: existing.selectedAddOns ?? "[]",
+          notes: existing.notes ?? "",
+        })
         .returning();
-      if (!updated) throw new Error("Payment request was already resolved");
-      return { request: updated, newPointsTotal: null };
-    }
 
-    const user = await this.getUser(existing.userId);
-    if (!user) throw new Error("Customer no longer exists");
+      const [updatedUser] = await tx
+        .update(users)
+        .set({ points: user.points + existing.pointsToEarn })
+        .where(eq(users.id, user.id))
+        .returning();
 
-    const transaction = await this.createTransaction({
-      userId: existing.userId,
-      productId: existing.productId,
-      amount: existing.amount,
-      pointsEarned: existing.pointsToEarn,
-      selectedAddOns: existing.selectedAddOns ?? "[]",
-      notes: existing.notes ?? "",
+      const [updatedRequest] = await tx
+        .update(paymentRequests)
+        .set({ status: "confirmed", transactionId: transaction.id })
+        .where(eq(paymentRequests.id, id))
+        .returning();
+
+      return { request: updatedRequest, newPointsTotal: updatedUser.points };
     });
-
-    const updatedUser = await this.updateUserPoints(
-      user.id,
-      user.points + existing.pointsToEarn,
-    );
-
-    const [updatedRequest] = await db
-      .update(paymentRequests)
-      .set({ status: "confirmed", transactionId: transaction.id })
-      .where(and(eq(paymentRequests.id, id), eq(paymentRequests.status, "pending")))
-      .returning();
-
-    if (!updatedRequest) {
-      const refetched = await this.getPaymentRequest(id);
-      return { request: refetched!, newPointsTotal: updatedUser.points };
-    }
-
-    return { request: updatedRequest, newPointsTotal: updatedUser.points };
   }
 
   // ── Discount tickets ──────────────────────────────────────────────────────

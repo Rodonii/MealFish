@@ -121,13 +121,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </header>
       {/* Mobile Navigation Bar (Bottom) */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass-card border-t border-slate-700/30 dark:border-slate-700/30 border-b-0 pb-safe">
-        <div className="flex justify-around items-center h-16 px-4">
+      <div
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass-card border-t border-slate-700/30 dark:border-slate-700/30 border-b-0 pb-safe"
+        aria-label="Mobile navigation"
+      >
+        <div className="overflow-x-auto overscroll-x-contain snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex w-max min-w-full items-center justify-start gap-2 px-3 h-16">
           {navItems.map((item) => (
             <Link 
               key={item.href} 
               href={item.href}
-              className={`flex flex-col items-center justify-center w-16 h-full gap-1 transition-colors ${
+              className={`flex shrink-0 snap-start flex-col items-center justify-center w-[4.75rem] min-w-[4.75rem] h-full gap-1 transition-colors ${
                 location === item.href ? "text-primary" : "text-muted-foreground"
               }`}
             >
@@ -137,7 +141,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           ))}
           <button 
             onClick={toggleTheme}
-            className="flex flex-col items-center justify-center w-16 h-full gap-1 text-muted-foreground hover:text-primary transition-colors"
+            className="flex shrink-0 snap-start flex-col items-center justify-center w-[4.75rem] min-w-[4.75rem] h-full gap-1 text-muted-foreground hover:text-primary transition-colors"
             title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
           >
             {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
@@ -145,11 +149,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </button>
           <button 
             onClick={logout}
-            className="flex flex-col items-center justify-center w-16 h-full gap-1 text-muted-foreground hover:text-destructive transition-colors"
+            className="flex shrink-0 snap-start flex-col items-center justify-center w-[4.75rem] min-w-[4.75rem] h-full gap-1 text-muted-foreground hover:text-destructive transition-colors"
           >
             <LogOut className="w-5 h-5" />
             <span className="text-[10px] font-medium">Logout</span>
           </button>
+          </div>
         </div>
       </div>
       <main className="flex-1 flex flex-col pt-8 pb-24 md:pb-8">

@@ -28,6 +28,15 @@ export interface PendingPaymentSummary {
   productName: string;
 }
 
+export interface PurchaseSummary {
+  totalPurchases: number;
+  products: Array<{
+    productId: number;
+    productName: string;
+    purchaseCount: number;
+  }>;
+}
+
 export interface ResolvePaymentResult {
   request: PaymentRequest;
   newPointsTotal: number | null;
@@ -82,6 +91,7 @@ export interface IStorage {
   getPendingPaymentRequest(userId: number): Promise<PaymentRequest | undefined>;
   updatePaymentRequestProof(id: number, proofImageUrl: string): Promise<PaymentRequest | undefined>;
   listPendingPaymentRequests(): Promise<PendingPaymentSummary[]>;
+  getPurchaseSummary(): Promise<PurchaseSummary>;
   resolvePaymentRequest(id: number, action: "confirm" | "reject"): Promise<ResolvePaymentResult>;
 
   // Discount tickets
@@ -284,6 +294,36 @@ export class DatabaseStorage implements IStorage {
       username: r.username ?? "(unknown)",
       productName: r.productName ?? "(deleted product)",
     }));
+  }
+
+  async getPurchaseSummary(): Promise<PurchaseSummary> {
+    const rows = await db
+      .select({
+        productId: transactions.productId,
+        productName: products.name,
+      })
+      .from(transactions)
+      .leftJoin(products, eq(products.id, transactions.productId));
+
+    const counts = new Map<number, { productName: string; purchaseCount: number }>();
+    for (const row of rows) {
+      const current = counts.get(row.productId);
+      if (current) {
+        current.purchaseCount += 1;
+      } else {
+        counts.set(row.productId, {
+          productName: row.productName ?? "(deleted product)",
+          purchaseCount: 1,
+        });
+      }
+    }
+
+    return {
+      totalPurchases: rows.length,
+      products: Array.from(counts.entries())
+        .map(([productId, value]) => ({ productId, ...value }))
+        .sort((a, b) => b.purchaseCount - a.purchaseCount || a.productName.localeCompare(b.productName)),
+    };
   }
 
   async resolvePaymentRequest(

@@ -21,6 +21,8 @@ import {
   Plus,
   MessageSquare,
   ImageIcon,
+  BarChart3,
+  ShoppingBag,
 } from "lucide-react";
 import type { PaymentRequest } from "@shared/schema";
 
@@ -40,7 +42,17 @@ interface PendingItem {
   productName: string;
 }
 
+interface PurchaseSummary {
+  totalPurchases: number;
+  products: Array<{
+    productId: number;
+    productName: string;
+    purchaseCount: number;
+  }>;
+}
+
 const PENDING_KEY = "/api/payments/pending";
+const SUMMARY_KEY = api.payments.summary.path;
 
 function timeSince(iso: string | Date): string {
   const date = typeof iso === "string" ? new Date(iso) : iso;
@@ -63,6 +75,12 @@ export default function Payments() {
     refetchInterval: 3000,
   });
 
+  const { data: summary, isLoading: summaryLoading } = useQuery<PurchaseSummary>({
+    queryKey: [SUMMARY_KEY],
+    enabled: !!user?.isAdmin,
+    refetchInterval: 5000,
+  });
+
   const confirmMutation = useMutation({
     mutationFn: async (id: number) => {
       const url = buildUrl(api.payments.confirm.path, { id });
@@ -70,6 +88,7 @@ export default function Payments() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [PENDING_KEY] });
+      queryClient.invalidateQueries({ queryKey: [SUMMARY_KEY] });
       toast({ title: "Payment confirmed", description: "Customer has been credited their points." });
     },
     onError: (err: any) => {
@@ -129,6 +148,49 @@ export default function Payments() {
           {pending.length} pending
         </div>
       </div>
+
+      <section className="mb-8 grid gap-4 sm:grid-cols-[minmax(180px,0.75fr)_minmax(0,1.25fr)]" aria-label="Purchase summary">
+        <div className="rounded-3xl border border-primary/20 bg-primary/5 p-5 shadow-sm" data-testid="card-total-purchases">
+          <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-primary">
+            <ShoppingBag className="h-4 w-4" />
+            Confirmed purchases
+          </div>
+          {summaryLoading ? (
+            <Loader2 className="mt-4 h-8 w-8 animate-spin text-primary" />
+          ) : (
+            <div className="mt-2 text-4xl font-display font-bold text-foreground" data-testid="text-total-purchases">
+              {summary?.totalPurchases ?? 0}
+            </div>
+          )}
+          <p className="mt-1 text-sm text-muted-foreground">All completed orders</p>
+        </div>
+
+        <div className="rounded-3xl border border-border bg-card p-5 shadow-sm" data-testid="card-purchases-by-product">
+          <div className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-foreground">
+            <BarChart3 className="h-4 w-4 text-primary" />
+            Purchases by product
+          </div>
+          {summaryLoading ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              Loading purchase counts...
+            </div>
+          ) : summary?.products.length ? (
+            <div className="space-y-2">
+              {summary.products.map((item) => (
+                <div key={item.productId} className="flex items-center justify-between gap-3 text-sm" data-testid={`product-purchase-count-${item.productId}`}>
+                  <span className="truncate font-medium text-foreground">{item.productName}</span>
+                  <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 font-bold text-primary">
+                    {item.purchaseCount} {item.purchaseCount === 1 ? "purchase" : "purchases"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No completed purchases yet.</p>
+          )}
+        </div>
+      </section>
 
       {isLoading ? (
         <div className="flex items-center justify-center py-20">

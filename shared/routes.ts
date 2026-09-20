@@ -203,6 +203,20 @@ export const api = {
         }).nullable(),
       },
     },
+    summary: {
+      method: 'GET' as const,
+      path: '/api/payments/summary' as const,
+      responses: {
+        200: z.object({
+          totalPurchases: z.number(),
+          products: z.array(z.object({
+            productId: z.number(),
+            productName: z.string(),
+            purchaseCount: z.number(),
+          })),
+        }),
+      },
+    },
     status: {
       method: 'GET' as const,
       path: '/api/payments/status/:id' as const,

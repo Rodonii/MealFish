@@ -331,6 +331,12 @@ export async function registerRoutes(
     res.json({ request, product: product ?? null });
   });
 
+  // Purchase totals are private admin reporting data.
+  app.get(api.payments.summary.path, requireAdmin, async (_req, res) => {
+    const summary = await storage.getPurchaseSummary();
+    res.json(summary);
+  });
+
   // Customer creates a new pending payment request
   app.post(api.payments.create.path, requireUser, async (req: any, res) => {
     try {

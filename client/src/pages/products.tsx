@@ -47,7 +47,7 @@ export default function Products() {
       <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h1 className="text-4xl font-display font-bold text-foreground">Available Meals</h1>
-          <p className="text-muted-foreground mt-2 text-lg">Purchase using e-wallet and earn points instantly.</p>
+          <p className="text-muted-foreground mt-2 text-lg">You can purchase using E-Wallets</p>
         </div>
         {user?.isAdmin && (
           <Link href="/products/new">
@@ -58,7 +58,6 @@ export default function Products() {
           </Link>
         )}
       </div>
-
       {products.length === 0 ? (
         <div className="text-center py-20 bg-card rounded-3xl border border-dashed shadow-sm">
           <Package className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />

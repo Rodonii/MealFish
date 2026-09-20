@@ -39,9 +39,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen flex flex-col bg-[#f8fafc] dark:bg-slate-950">
       <header className="sticky top-0 z-50 w-full border-b border-white/20 dark:border-slate-700/30 glass-card">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 py-3 sm:flex-nowrap sm:py-0 md:h-20">
             {/* Logo */}
-            <Link href="/products" className="flex items-center gap-2 group">
+            <Link href="/products" className="flex min-w-0 shrink-0 items-center gap-2 group">
               {logoUrl ? (
                 <div className="w-10 h-10 rounded-xl overflow-hidden bg-white shadow-lg shadow-primary/10 group-hover:scale-105 transition-transform duration-300 border border-border">
                   <img src={logoUrl} alt="Store logo" className="w-full h-full object-cover" data-testid="img-store-logo" />
@@ -51,7 +51,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <QrCode className="w-5 h-5" />
                 </div>
               )}
-              <span className="font-display font-bold text-xl tracking-tight text-foreground">
+              <span className="whitespace-nowrap font-display font-bold text-xl tracking-tight text-foreground">
                 Meal'<span className="text-primary">Fish</span>
               </span>
             </Link>
@@ -73,24 +73,24 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </nav>
 
             {/* User Profile & Points */}
-            <div className="flex items-center gap-2 sm:gap-4">
+            <div className="basis-full ml-auto flex w-full shrink-0 items-center justify-end gap-2 border-t border-border/60 pt-2 sm:basis-auto sm:w-auto sm:gap-4 sm:border-t-0 sm:pt-0">
               <Link href="/rewards">
                 <motion.div
                   key={user.points}
                   initial={{ scale: 1.2, color: "var(--accent)" }}
                   animate={{ scale: 1, color: "inherit" }}
-                  className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1 sm:py-2 bg-accent/10 text-accent-foreground rounded-full border border-accent/20 shadow-sm cursor-pointer hover:bg-accent/20 hover:shadow-md hover:scale-105 transition-all duration-200"
+                  className="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-accent/20 bg-accent/10 px-3 py-2 text-accent-foreground shadow-sm cursor-pointer transition-all duration-200 hover:bg-accent/20 hover:shadow-md hover:scale-105"
                   data-testid="link-points-badge"
                   title="View rewards"
                 >
-                  <Award className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-accent" />
-                  <span className="font-bold text-accent text-xs sm:text-sm md:text-base">{user.points} pts</span>
+                  <Award className="h-4 w-4 text-accent" />
+                  <span className="whitespace-nowrap text-sm font-bold text-accent">{user.points} pts</span>
                 </motion.div>
               </Link>
 
-              <div className="flex items-center gap-1 sm:gap-3 sm:pl-4 sm:border-l">
+              <div className="flex min-w-0 items-center gap-1 border-l pl-2 sm:gap-3 sm:pl-4">
                 <span
-                  className="text-sm font-bold text-foreground dark:text-foreground max-w-[80px] sm:max-w-none truncate"
+                  className="min-w-0 max-w-[7rem] truncate text-sm font-bold text-foreground dark:text-foreground sm:max-w-none"
                   data-testid="text-username"
                   title={user.username}
                 >
@@ -100,7 +100,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   variant="ghost"
                   size="icon"
                   onClick={toggleTheme}
-                  className="hover:text-primary hover:bg-primary/10 h-9 w-9"
+                  className="h-9 w-9 shrink-0 hover:bg-primary/10 hover:text-primary"
                   title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
                   data-testid="button-toggle-theme"
                 >
@@ -110,8 +110,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   variant="ghost"
                   size="icon"
                   onClick={logout}
-                  className="hover:text-destructive hover:bg-destructive/10 h-9 w-9"
+                  className="h-9 w-9 shrink-0 hover:bg-destructive/10 hover:text-destructive"
                   data-testid="button-logout"
+                  aria-label="Log out"
                 >
                   <LogOut className="w-4 h-4" />
                 </Button>

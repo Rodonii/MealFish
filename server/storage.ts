@@ -31,10 +31,12 @@ export interface PendingPaymentSummary {
 export interface PurchaseSummary {
   date: string | null;
   totalPurchases: number;
+  totalEarnings: number;
   products: Array<{
     productId: number;
     productName: string;
     purchaseCount: number;
+    totalAmount: number;
   }>;
 }
 
@@ -314,6 +316,7 @@ export class DatabaseStorage implements IStorage {
       .select({
         productId: transactions.productId,
         productName: products.name,
+        amount: transactions.amount,
         createdAt: transactions.createdAt,
       })
       .from(transactions)
@@ -322,15 +325,17 @@ export class DatabaseStorage implements IStorage {
     const matchingRows = date
       ? rows.filter((row) => formatBusinessDate(row.createdAt) === date)
       : rows;
-    const counts = new Map<number, { productName: string; purchaseCount: number }>();
+    const counts = new Map<number, { productName: string; purchaseCount: number; totalAmount: number }>();
     for (const row of matchingRows) {
       const current = counts.get(row.productId);
       if (current) {
         current.purchaseCount += 1;
+        current.totalAmount += row.amount;
       } else {
         counts.set(row.productId, {
           productName: row.productName ?? "(deleted product)",
           purchaseCount: 1,
+          totalAmount: row.amount,
         });
       }
     }
@@ -338,6 +343,7 @@ export class DatabaseStorage implements IStorage {
     return {
       date: date ?? null,
       totalPurchases: matchingRows.length,
+      totalEarnings: matchingRows.reduce((total, row) => total + row.amount, 0),
       products: Array.from(counts.entries())
         .map(([productId, value]) => ({ productId, ...value }))
         .sort((a, b) => b.purchaseCount - a.purchaseCount || a.productName.localeCompare(b.productName)),

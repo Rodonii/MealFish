@@ -45,10 +45,12 @@ interface PendingItem {
 interface PurchaseSummary {
   date: string | null;
   totalPurchases: number;
+  totalEarnings: number;
   products: Array<{
     productId: number;
     productName: string;
     purchaseCount: number;
+    totalAmount: number;
   }>;
 }
 
@@ -186,8 +188,18 @@ export default function Payments() {
             <div className="mt-2 text-4xl font-display font-bold text-foreground" data-testid="text-total-purchases">
               {summary?.totalPurchases ?? 0}
             </div>
-          )}
-          <p className="mt-1 text-sm text-muted-foreground">Completed orders on this date</p>
+           )}
+           <p className="mt-1 text-sm text-muted-foreground">Completed orders on this date</p>
+           <div className="mt-4 border-t border-primary/15 pt-3">
+             <p className="text-xs font-bold uppercase tracking-wide text-primary">Total earnings</p>
+             {summaryLoading ? (
+               <Loader2 className="mt-2 h-5 w-5 animate-spin text-primary" />
+             ) : (
+               <p className="mt-1 text-2xl font-display font-bold text-foreground" data-testid="text-total-earnings">
+                 {formatPrice(summary?.totalEarnings ?? 0)}
+               </p>
+             )}
+           </div>
         </div>
 
         <div className="rounded-3xl border border-border bg-card p-5 shadow-sm" data-testid="card-purchases-by-product">
@@ -203,11 +215,16 @@ export default function Payments() {
           ) : summary?.products.length ? (
             <div className="space-y-2">
               {summary.products.map((item) => (
-                <div key={item.productId} className="flex items-center justify-between gap-3 text-sm" data-testid={`product-purchase-count-${item.productId}`}>
-                  <span className="truncate font-medium text-foreground">{item.productName}</span>
-                  <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 font-bold text-primary">
-                    {item.purchaseCount} {item.purchaseCount === 1 ? "purchase" : "purchases"}
-                  </span>
+               <div key={item.productId} className="flex items-center justify-between gap-3 text-sm" data-testid={`product-purchase-count-${item.productId}`}>
+                   <div className="min-w-0">
+                     <span className="block truncate font-medium text-foreground">{item.productName}</span>
+                     <span className="text-xs text-muted-foreground">
+                       {item.purchaseCount} {item.purchaseCount === 1 ? "purchase" : "purchases"}
+                     </span>
+                   </div>
+                   <span className="shrink-0 text-right font-bold text-primary" data-testid={`product-earnings-${item.productId}`}>
+                     {formatPrice(item.totalAmount)}
+                   </span>
                 </div>
               ))}
             </div>

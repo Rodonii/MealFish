@@ -210,10 +210,12 @@ export const api = {
         200: z.object({
           date: z.string().nullable(),
           totalPurchases: z.number(),
+          totalEarnings: z.number(),
           products: z.array(z.object({
             productId: z.number(),
             productName: z.string(),
             purchaseCount: z.number(),
+            totalAmount: z.number(),
           })),
         }),
       },

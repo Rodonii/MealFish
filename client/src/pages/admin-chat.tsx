@@ -110,9 +110,9 @@ export default function AdminChat() {
         <p className="text-muted-foreground mt-1">Respond to customer questions and order concerns.</p>
       </div>
 
-      <div className="bg-card border border-border rounded-3xl shadow-sm overflow-hidden flex" style={{ height: 580 }}>
+      <div className="flex h-[min(580px,calc(100dvh-13rem))] min-h-[440px] flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-sm md:h-[580px] md:min-h-0 md:flex-row">
         {/* Thread List */}
-        <div className="w-64 shrink-0 border-r border-border flex flex-col">
+        <div className="flex h-40 w-full shrink-0 flex-col border-b border-border md:h-auto md:w-64 md:border-b-0 md:border-r">
           <div className="px-4 py-3 border-b border-border">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Conversations</p>
           </div>
@@ -162,7 +162,7 @@ export default function AdminChat() {
         </div>
 
         {/* Chat Area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {!selectedUserId ? (
             <div className="flex-1 flex items-center justify-center flex-col gap-2 text-center px-8">
               <MessageCircle className="w-12 h-12 text-muted-foreground/20" />
@@ -171,7 +171,7 @@ export default function AdminChat() {
           ) : (
             <>
               {/* Chat header */}
-              <div className="px-5 py-3 border-b border-border flex items-center gap-3">
+              <div className="flex shrink-0 items-center gap-3 border-b border-border px-5 py-3">
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                   <User className="w-4 h-4 text-primary" />
                 </div>
@@ -182,7 +182,7 @@ export default function AdminChat() {
               </div>
 
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto px-5 py-4 space-y-2 bg-background/40">
+              <div className="min-h-0 flex-1 space-y-2 overflow-y-auto bg-background/40 px-5 py-4">
                 {messagesLoading ? (
                   <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
                 ) : messages.length === 0 ? (
@@ -213,13 +213,13 @@ export default function AdminChat() {
               </div>
 
               {/* Reply input */}
-              <div className="flex items-center gap-2 px-4 py-3 border-t border-border bg-card">
+              <div className="flex shrink-0 items-center gap-2 border-t border-border bg-card px-4 py-3">
                 <input
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKey}
                   placeholder="Type your reply..."
-                  className="flex-1 text-sm px-4 py-2.5 rounded-xl border border-border bg-background focus:outline-none focus:border-primary transition-colors"
+                  className="min-w-0 flex-1 rounded-xl border border-border bg-background px-4 py-2.5 text-sm transition-colors focus:border-primary focus:outline-none"
                   disabled={replyMutation.isPending}
                   data-testid="input-admin-reply"
                 />

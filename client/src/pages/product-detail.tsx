@@ -32,7 +32,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { api, buildUrl } from "@shared/routes";
+import { api, buildUrl, resolveApiUrl } from "@shared/routes";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { PaymentRequest, Product } from "@shared/schema";
 import { AddOnEditor, type AddOn } from "@/components/add-on-editor";
@@ -261,7 +261,7 @@ export default function ProductDetail() {
       const formData = new FormData();
       formData.append("proof", file);
       const userId = user?.id;
-      const res = await fetch(`/api/payments/${paymentRequestId}/proof`, {
+      const res = await fetch(resolveApiUrl(`/api/payments/${paymentRequestId}/proof`), {
         method: "POST",
         headers: userId ? { "x-user-id": String(userId) } : {},
         body: formData,

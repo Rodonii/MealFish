@@ -2,7 +2,7 @@ import React from "react";
 import { Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { api } from "@shared/routes";
+import { api, resolveApiUrl } from "@shared/routes";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
@@ -79,7 +79,7 @@ export default function Branding() {
       setBusy(kind);
       const formData = new FormData();
       formData.append("image", file);
-      const res = await fetch(api.products.upload.path, {
+      const res = await fetch(resolveApiUrl(api.products.upload.path), {
         method: "POST",
         body: formData,
         credentials: "include",

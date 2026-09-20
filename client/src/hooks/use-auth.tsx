@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { api } from "@shared/routes";
+import { api, resolveApiUrl } from "@shared/routes";
 import { parseWithLogging } from "@/lib/utils";
 
 // Minimal local user type based on schema expectations
@@ -40,7 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginMutation = useMutation({
     mutationFn: async ({ username, password }: { username: string; password: string }) => {
-      const res = await fetch(api.users.login.path, {
+      const res = await fetch(resolveApiUrl(api.users.login.path), {
         method: api.users.login.method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
@@ -63,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const registerMutation = useMutation({
     mutationFn: async ({ username, password }: { username: string; password: string }) => {
-      const res = await fetch(api.users.register.path, {
+      const res = await fetch(resolveApiUrl(api.users.register.path), {
         method: api.users.register.method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),

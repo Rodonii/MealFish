@@ -2,7 +2,7 @@ import React from "react";
 import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { api } from "@shared/routes";
+import { api, resolveApiUrl } from "@shared/routes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -63,7 +63,7 @@ export default function NewProduct() {
       setUploading(true);
       const formData = new FormData();
       formData.append("image", file);
-      const res = await fetch(api.products.upload.path, {
+      const res = await fetch(resolveApiUrl(api.products.upload.path), {
         method: "POST",
         body: formData,
         credentials: "include",

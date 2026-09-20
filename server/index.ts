@@ -5,12 +5,45 @@ import { createServer } from "http";
 
 const app = express();
 const httpServer = createServer(app);
+const frontendUrl = process.env.FRONTEND_URL?.replace(/\/$/, "") || "";
+const allowedOrigins = Array.from(
+  new Set(
+    [
+      frontendUrl,
+      "http://localhost:5173",
+      "http://127.0.0.1:5173",
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+    ].filter(Boolean),
+  ),
+);
 
 declare module "http" {
   interface IncomingMessage {
     rawBody: unknown;
   }
 }
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  const isAllowedOrigin = origin && allowedOrigins.includes(origin);
+
+  if (isAllowedOrigin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization, x-user-id",
+    );
+    res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
+  }
+
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
+
+  next();
+});
 
 app.use(
   express.json({
@@ -78,9 +111,10 @@ app.use((req, res, next) => {
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
-  if (process.env.NODE_ENV === "production") {
+  const shouldServeFrontend = process.env.SERVE_FRONTEND === "true";
+  if (process.env.NODE_ENV === "production" && shouldServeFrontend) {
     serveStatic(app);
-  } else {
+  } else if (process.env.NODE_ENV !== "production") {
     const { setupVite } = await import("./vite");
     await setupVite(httpServer, app);
   }
@@ -94,7 +128,6 @@ app.use((req, res, next) => {
     {
       port,
       host: "0.0.0.0",
-      reusePort: true,
     },
     () => {
       log(`serving on port ${port}`);

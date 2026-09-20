@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { resolveApiUrl } from "@shared/routes";
 import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
 import { ArrowLeft, MessageCircle, Send, Loader2, ShieldAlert, User } from "lucide-react";
@@ -39,7 +40,7 @@ export default function AdminChat() {
     queryKey: ["/api/chat/threads", selectedUserId],
     queryFn: async () => {
       if (!selectedUserId) return [];
-      const res = await fetch(`/api/chat/threads/${selectedUserId}`, {
+      const res = await fetch(resolveApiUrl(`/api/chat/threads/${selectedUserId}`), {
         headers: { "x-user-id": String(user!.id) },
       });
       if (!res.ok) throw new Error("Failed to fetch");

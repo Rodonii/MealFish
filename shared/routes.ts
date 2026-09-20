@@ -1,6 +1,25 @@
 import { z } from 'zod';
 import { users, products, transactions, paymentRequests, discountTickets, redemptions } from './schema';
 
+const getRuntimeApiBase = (): string => {
+  const globalApiBase = (globalThis as any).__APP_API_BASE__;
+  if (typeof globalApiBase === 'string' && globalApiBase.trim()) {
+    return globalApiBase.replace(/\/+$/, '');
+  }
+
+  return '';
+};
+
+export function resolveApiUrl(path: string): string {
+  if (!path) return path;
+  if (/^https?:\/\//i.test(path)) return path;
+
+  const normalizedBase = getRuntimeApiBase();
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+
+  return normalizedBase ? `${normalizedBase}${normalizedPath}` : normalizedPath;
+}
+
 export const errorSchemas = {
   validation: z.object({
     message: z.string(),
@@ -441,5 +460,5 @@ export function buildUrl(path: string, params?: Record<string, string | number>)
       }
     });
   }
-  return url;
+  return resolveApiUrl(url);
 }

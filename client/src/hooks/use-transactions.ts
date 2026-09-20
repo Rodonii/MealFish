@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, buildUrl } from "@shared/routes";
+import { api, buildUrl, resolveApiUrl } from "@shared/routes";
 
 export interface TransactionResponse {
   id: number;
@@ -16,7 +16,7 @@ export function useUserTransactions(userId: number | undefined) {
     queryFn: async () => {
       if (!userId) return [];
       const url = buildUrl(api.transactions.listUserTransactions.path, { id: userId });
-      const res = await fetch(url, { credentials: "include" });
+      const res = await fetch(resolveApiUrl(url), { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch transactions");
       const data = await res.json();
       return data as TransactionResponse[];
@@ -30,7 +30,7 @@ export function usePurchase() {
   
   return useMutation({
     mutationFn: async (data: { userId: number; productId: number }) => {
-      const res = await fetch(api.transactions.purchase.path, {
+      const res = await fetch(resolveApiUrl(api.transactions.purchase.path), {
         method: api.transactions.purchase.method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),

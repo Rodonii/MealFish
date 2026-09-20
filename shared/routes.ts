@@ -208,6 +208,7 @@ export const api = {
       path: '/api/payments/summary' as const,
       responses: {
         200: z.object({
+          date: z.string().nullable(),
           totalPurchases: z.number(),
           products: z.array(z.object({
             productId: z.number(),

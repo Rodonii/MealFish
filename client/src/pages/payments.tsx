@@ -43,6 +43,7 @@ interface PendingItem {
 }
 
 interface PurchaseSummary {
+  date: string | null;
   totalPurchases: number;
   products: Array<{
     productId: number;
@@ -53,6 +54,15 @@ interface PurchaseSummary {
 
 const PENDING_KEY = "/api/payments/pending";
 const SUMMARY_KEY = api.payments.summary.path;
+
+function getBusinessDate(): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Manila",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
 
 function timeSince(iso: string | Date): string {
   const date = typeof iso === "string" ? new Date(iso) : iso;
@@ -68,6 +78,7 @@ function timeSince(iso: string | Date): string {
 export default function Payments() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [summaryDate, setSummaryDate] = React.useState(getBusinessDate);
 
   const { data, isLoading } = useQuery<PendingItem[]>({
     queryKey: [PENDING_KEY],
@@ -76,7 +87,11 @@ export default function Payments() {
   });
 
   const { data: summary, isLoading: summaryLoading } = useQuery<PurchaseSummary>({
-    queryKey: [SUMMARY_KEY],
+    queryKey: [SUMMARY_KEY, summaryDate],
+    queryFn: async () => {
+      const response = await apiRequest("GET", `${SUMMARY_KEY}?date=${encodeURIComponent(summaryDate)}`);
+      return (await response.json()) as PurchaseSummary;
+    },
     enabled: !!user?.isAdmin,
     refetchInterval: 5000,
   });
@@ -151,9 +166,19 @@ export default function Payments() {
 
       <section className="mb-8 grid gap-4 sm:grid-cols-[minmax(180px,0.75fr)_minmax(0,1.25fr)]" aria-label="Purchase summary">
         <div className="rounded-3xl border border-primary/20 bg-primary/5 p-5 shadow-sm" data-testid="card-total-purchases">
-          <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-primary">
-            <ShoppingBag className="h-4 w-4" />
-            Confirmed purchases
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-primary">
+              <ShoppingBag className="h-4 w-4" />
+              Purchases for
+            </div>
+            <input
+              type="date"
+              value={summaryDate}
+              onChange={(event) => setSummaryDate(event.target.value)}
+              className="rounded-xl border border-primary/20 bg-card px-3 py-2 text-sm font-semibold text-foreground shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              aria-label="Purchase summary date"
+              data-testid="input-summary-date"
+            />
           </div>
           {summaryLoading ? (
             <Loader2 className="mt-4 h-8 w-8 animate-spin text-primary" />
@@ -162,7 +187,7 @@ export default function Payments() {
               {summary?.totalPurchases ?? 0}
             </div>
           )}
-          <p className="mt-1 text-sm text-muted-foreground">All completed orders</p>
+          <p className="mt-1 text-sm text-muted-foreground">Completed orders on this date</p>
         </div>
 
         <div className="rounded-3xl border border-border bg-card p-5 shadow-sm" data-testid="card-purchases-by-product">

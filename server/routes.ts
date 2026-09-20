@@ -332,8 +332,13 @@ export async function registerRoutes(
   });
 
   // Purchase totals are private admin reporting data.
-  app.get(api.payments.summary.path, requireAdmin, async (_req, res) => {
-    const summary = await storage.getPurchaseSummary();
+  app.get(api.payments.summary.path, requireAdmin, async (req, res) => {
+    const date = typeof req.query.date === "string" ? req.query.date : undefined;
+    if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return res.status(400).json({ message: "Date must use YYYY-MM-DD format" });
+    }
+
+    const summary = await storage.getPurchaseSummary(date);
     res.json(summary);
   });
 

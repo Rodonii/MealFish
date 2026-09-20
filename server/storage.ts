@@ -29,6 +29,7 @@ export interface PendingPaymentSummary {
 }
 
 export interface PurchaseSummary {
+  date: string | null;
   totalPurchases: number;
   products: Array<{
     productId: number;
@@ -127,6 +128,18 @@ function generateReferenceCode(): string {
     out += chars[Math.floor(Math.random() * chars.length)];
   }
   return out;
+}
+
+const BUSINESS_TIME_ZONE = "Asia/Manila";
+
+function formatBusinessDate(value: Date | null): string | null {
+  if (!value) return null;
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: BUSINESS_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(value);
 }
 
 export class DatabaseStorage implements IStorage {
@@ -296,17 +309,21 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
-  async getPurchaseSummary(): Promise<PurchaseSummary> {
+  async getPurchaseSummary(date?: string): Promise<PurchaseSummary> {
     const rows = await db
       .select({
         productId: transactions.productId,
         productName: products.name,
+        createdAt: transactions.createdAt,
       })
       .from(transactions)
       .leftJoin(products, eq(products.id, transactions.productId));
 
+    const matchingRows = date
+      ? rows.filter((row) => formatBusinessDate(row.createdAt) === date)
+      : rows;
     const counts = new Map<number, { productName: string; purchaseCount: number }>();
-    for (const row of rows) {
+    for (const row of matchingRows) {
       const current = counts.get(row.productId);
       if (current) {
         current.purchaseCount += 1;
@@ -319,7 +336,8 @@ export class DatabaseStorage implements IStorage {
     }
 
     return {
-      totalPurchases: rows.length,
+      date: date ?? null,
+      totalPurchases: matchingRows.length,
       products: Array.from(counts.entries())
         .map(([productId, value]) => ({ productId, ...value }))
         .sort((a, b) => b.purchaseCount - a.purchaseCount || a.productName.localeCompare(b.productName)),

@@ -1,15 +1,13 @@
-import { pgTable, text, serial, integer, timestamp, boolean, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-
-export const userRoleEnum = pgEnum("user_role", ["user", "admin"]);
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   points: integer("points").notNull().default(0),
-  role: userRoleEnum("role").notNull().default("user"),
+  role: text("role").notNull().default("user"),
   isAdmin: boolean("is_admin").notNull().default(false),
 });
 

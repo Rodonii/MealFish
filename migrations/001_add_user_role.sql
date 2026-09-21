@@ -1,9 +1,7 @@
 BEGIN;
 
-CREATE TYPE IF NOT EXISTS user_role AS ENUM ('user', 'admin');
-
 ALTER TABLE users
-  ADD COLUMN IF NOT EXISTS role user_role NOT NULL DEFAULT 'user';
+  ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'user';
 
 UPDATE users
 SET role = CASE

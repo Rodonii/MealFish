@@ -65,15 +65,18 @@ export interface RedeemResult {
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
+  getUsers(): Promise<User[]>;
   getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser & { isAdmin?: boolean }): Promise<User>;
+  createUser(user: InsertUser & { isAdmin?: boolean; role?: User["role"] }): Promise<User>;
   updateUserPoints(id: number, points: number): Promise<User>;
+  setUserRole(id: number, role: User["role"]): Promise<User>;
   setUserAdmin(id: number, isAdmin: boolean): Promise<User>;
 
   getProducts(): Promise<Product[]>;
   getProduct(id: number): Promise<Product | undefined>;
   createProduct(product: InsertProduct): Promise<Product>;
   updateProduct(id: number, fields: Partial<InsertProduct>): Promise<Product | undefined>;
+  deleteProduct(id: number): Promise<boolean>;
 
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
   getUserTransactions(userId: number): Promise<Transaction[]>;
@@ -150,24 +153,38 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async getUsers(): Promise<User[]> {
+    return await db.select().from(users).orderBy(users.username);
+  }
+
   async getUserByUsername(username: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(ilike(users.username, username));
     return user;
   }
 
-  async createUser(insertUser: InsertUser & { isAdmin?: boolean }): Promise<User> {
-    const normalized = { ...insertUser, username: insertUser.username.toLowerCase() };
+  async createUser(insertUser: InsertUser & { isAdmin?: boolean; role?: User["role"] }): Promise<User> {
+    const role = insertUser.role ?? (insertUser.isAdmin ? "admin" : "user");
+    const normalized = {
+      ...insertUser,
+      username: insertUser.username.toLowerCase(),
+      role,
+      isAdmin: insertUser.isAdmin ?? (role === "admin"),
+    };
     const [user] = await db.insert(users).values(normalized).returning();
     return user;
   }
 
-  async setUserAdmin(id: number, isAdmin: boolean): Promise<User> {
+  async setUserRole(id: number, role: User["role"]): Promise<User> {
     const [user] = await db
       .update(users)
-      .set({ isAdmin })
+      .set({ role, isAdmin: role === "admin" })
       .where(eq(users.id, id))
       .returning();
     return user;
+  }
+
+  async setUserAdmin(id: number, isAdmin: boolean): Promise<User> {
+    return this.setUserRole(id, isAdmin ? "admin" : "user");
   }
 
   async updateUserPoints(id: number, points: number): Promise<User> {
@@ -203,6 +220,11 @@ export class DatabaseStorage implements IStorage {
       .where(eq(products.id, id))
       .returning();
     return updated;
+  }
+
+  async deleteProduct(id: number): Promise<boolean> {
+    const result = await db.delete(products).where(eq(products.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 
   async createTransaction(insertTransaction: InsertTransaction): Promise<Transaction> {

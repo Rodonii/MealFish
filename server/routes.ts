@@ -4,7 +4,8 @@ import { storage } from "./storage";
 import { api, errorSchemas } from "@shared/routes";
 import { z } from "zod";
 import { db } from "./db";
-import { products } from "@shared/schema";
+import { products, users, transactions, paymentRequests } from "@shared/schema";
+import { eq, desc } from "drizzle-orm";
 import express from "express";
 import multer from "multer";
 import path from "path";
@@ -39,20 +40,58 @@ export async function registerRoutes(
   // Seed initial products if none exist
   await seedProducts();
 
-  // Helper: only allow admins through
-  const requireAdmin = async (req: any, res: any, next: any) => {
+  const isAdminUser = (user: { role?: string; isAdmin?: boolean } | null | undefined) => {
+    if (!user) return false;
+    return user.role === "admin" || !!user.isAdmin;
+  };
+
+  const serializeUser = (user: any) => ({
+    ...user,
+    role: user.role ?? (user.isAdmin ? "admin" : "user"),
+    isAdmin: user.role === "admin" || !!user.isAdmin,
+  });
+
+  const getCurrentUser = async (req: any) => {
+    const sessionUserId = Number(req.session?.userId ?? NaN);
     const userIdHeader = req.header("x-user-id");
-    const userId = userIdHeader ? Number(userIdHeader) : NaN;
+    const headerUserId = userIdHeader ? Number(userIdHeader) : NaN;
+    const userId = Number.isFinite(sessionUserId) ? sessionUserId : Number.isFinite(headerUserId) ? headerUserId : NaN;
+
     if (!Number.isFinite(userId)) {
-      return res.status(401).json({ message: "Login required" });
+      return null;
     }
+
     const user = await storage.getUser(userId);
+    if (!user) {
+      return null;
+    }
+
+    const serializedUser = serializeUser(user);
+    if (req.session && !req.session.userId) {
+      req.session.userId = serializedUser.id;
+    }
+    return serializedUser;
+  };
+
+  const requireUser = async (req: any, res: any, next: any) => {
+    const user = await getCurrentUser(req);
     if (!user) {
       return res.status(401).json({ message: "Login required" });
     }
-    if (!user.isAdmin) {
+    req.currentUser = user;
+    next();
+  };
+
+  // Helper: only allow admins through
+  const requireAdmin = async (req: any, res: any, next: any) => {
+    const user = await getCurrentUser(req);
+    if (!user) {
+      return res.status(401).json({ message: "Login required" });
+    }
+    if (!isAdminUser(user)) {
       return res.status(403).json({ message: "Only admins can do that" });
     }
+    req.currentUser = user;
     next();
   };
 
@@ -75,7 +114,11 @@ export async function registerRoutes(
         user = await storage.setUserAdmin(user.id, true);
       }
 
-      res.status(200).json(user);
+      const serializedUser = serializeUser(user);
+      const session = req.session as any;
+      session.userId = serializedUser.id;
+      session.role = serializedUser.role;
+      return res.status(200).json(serializedUser);
     } catch (err) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({
@@ -98,9 +141,14 @@ export async function registerRoutes(
       const user = await storage.createUser({
         username: input.username,
         password: input.password,
+        role: normalizedUsername === "admin" ? "admin" : "user",
         isAdmin: normalizedUsername === "admin",
       } as any);
-      res.status(201).json(user);
+      const serializedUser = serializeUser(user);
+      const session = req.session as any;
+      session.userId = serializedUser.id;
+      session.role = serializedUser.role;
+      res.status(201).json(serializedUser);
     } catch (err) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({
@@ -117,7 +165,85 @@ export async function registerRoutes(
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    res.json(user);
+    res.json(serializeUser(user));
+  });
+
+  app.get("/api/admin/users", requireAdmin, async (_req, res) => {
+    const usersList = await storage.getUsers();
+    res.json(usersList.map((user) => serializeUser(user)));
+  });
+
+  app.patch("/api/admin/users/:id/role", requireAdmin, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (!Number.isFinite(id)) {
+        return res.status(400).json({ message: "Invalid user id" });
+      }
+      const input = z.object({ role: z.enum(["user", "admin"]) }).parse(req.body);
+      const targetUser = await storage.getUser(id);
+      if (!targetUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      const adminUsers = (await storage.getUsers()).filter((user) => isAdminUser(user));
+      if (input.role === "user" && adminUsers.length <= 1 && isAdminUser(targetUser)) {
+        return res.status(400).json({ message: "You cannot remove the last administrator." });
+      }
+      const updated = await storage.setUserRole(id, input.role);
+      res.json(serializeUser(updated));
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      throw err;
+    }
+  });
+
+  app.patch("/api/admin/users/:id/points", requireAdmin, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (!Number.isFinite(id)) {
+        return res.status(400).json({ message: "Invalid user id" });
+      }
+      const input = z.object({ points: z.number().int().nonnegative() }).parse(req.body);
+      const user = await storage.getUser(id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      const updated = await storage.updateUserPoints(id, input.points);
+      res.json(serializeUser(updated));
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      throw err;
+    }
+  });
+
+  app.get("/api/admin/transactions", requireAdmin, async (_req, res) => {
+    const rows = await db
+      .select({
+        id: transactions.id,
+        userId: transactions.userId,
+        productId: transactions.productId,
+        amount: transactions.amount,
+        pointsEarned: transactions.pointsEarned,
+        selectedAddOns: transactions.selectedAddOns,
+        notes: transactions.notes,
+        createdAt: transactions.createdAt,
+        username: users.username,
+        productName: products.name,
+        status: paymentRequests.status,
+      })
+      .from(transactions)
+      .leftJoin(users, eq(users.id, transactions.userId))
+      .leftJoin(products, eq(products.id, transactions.productId))
+      .leftJoin(paymentRequests, eq(paymentRequests.transactionId, transactions.id))
+      .orderBy(desc(transactions.createdAt));
+
+    res.json(rows.map((row) => ({
+      ...row,
+      status: row.status ?? "confirmed",
+    })));
   });
 
   // Serve uploaded images
@@ -182,6 +308,20 @@ export async function registerRoutes(
       }
       throw err;
     }
+  });
+
+  app.delete(api.products.get.path, requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) {
+      return res.status(400).json({ message: "Invalid product id" });
+    }
+
+    const deleted = await storage.deleteProduct(id);
+    if (!deleted) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    res.json({ success: true });
   });
 
   // Settings (branding & payment)
@@ -296,21 +436,6 @@ export async function registerRoutes(
     const transactions = await storage.getUserTransactions(Number(req.params.id));
     res.json(transactions);
   });
-
-  // Helper: identify the logged-in customer from the x-user-id header
-  const requireUser = async (req: any, res: any, next: any) => {
-    const userIdHeader = req.header("x-user-id");
-    const userId = userIdHeader ? Number(userIdHeader) : NaN;
-    if (!Number.isFinite(userId)) {
-      return res.status(401).json({ message: "Login required" });
-    }
-    const user = await storage.getUser(userId);
-    if (!user) {
-      return res.status(401).json({ message: "Login required" });
-    }
-    req.currentUser = user;
-    next();
-  };
 
   // ---- Payment requests (admin-confirmed e-wallet flow) ----
 

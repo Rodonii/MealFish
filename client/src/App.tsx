@@ -19,6 +19,7 @@ import History from "./pages/history";
 import Rewards from "./pages/rewards";
 import AdminTickets from "./pages/admin-tickets";
 import AdminChat from "./pages/admin-chat";
+import AdminDashboard from "./pages/admin-dashboard";
 import { ChatWidget } from "./components/chat-widget";
 
 function ProtectedRoute({ component: Component, ...rest }: { component: any, path: string }) {
@@ -26,6 +27,20 @@ function ProtectedRoute({ component: Component, ...rest }: { component: any, pat
   
   if (!user) {
     return <Redirect to="/" />;
+  }
+
+  return <Component {...rest} />;
+}
+
+function ProtectedAdminRoute({ component: Component, ...rest }: { component: any, path: string }) {
+  const { user } = useAuth();
+
+  if (!user) {
+    return <Redirect to="/" />;
+  }
+
+  if (user.role !== "admin" && !user.isAdmin) {
+    return <Redirect to="/products" />;
   }
 
   return <Component {...rest} />;
@@ -66,11 +81,14 @@ function Router() {
         <Route path="/rewards">
           {() => <ProtectedRoute component={Rewards} path="/rewards" />}
         </Route>
+        <Route path="/admin">
+          {() => <ProtectedAdminRoute component={AdminDashboard} path="/admin" />}
+        </Route>
         <Route path="/admin/tickets">
-          {() => <ProtectedRoute component={AdminTickets} path="/admin/tickets" />}
+          {() => <ProtectedAdminRoute component={AdminTickets} path="/admin/tickets" />}
         </Route>
         <Route path="/admin/chat">
-          {() => <ProtectedRoute component={AdminChat} path="/admin/chat" />}
+          {() => <ProtectedAdminRoute component={AdminChat} path="/admin/chat" />}
         </Route>
         <Route component={NotFound} />
       </Switch>

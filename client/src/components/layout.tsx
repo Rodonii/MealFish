@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@shared/routes";
-import { Award, QrCode, History, LogOut, Package, Sun, Moon, Image as ImageIcon, Inbox, Ticket, MessageCircle } from "lucide-react";
+import { Award, QrCode, History, LogOut, Package, Sun, Moon, Image as ImageIcon, Inbox, Ticket, MessageCircle, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { useTheme } from "@/hooks/use-theme";
@@ -19,12 +19,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   if (!user) return <>{children}</>;
 
+  const isAdmin = user.role === "admin" || !!user.isAdmin;
   const navItems = [
     { href: "/products", label: "Products", icon: Package },
     { href: "/history", label: "History", icon: History },
     { href: "/rewards", label: "Rewards", icon: Award },
-    ...(user.isAdmin
+    ...(isAdmin
       ? [
+          { href: "/admin", label: "Admin", icon: ShieldCheck },
           { href: "/payments", label: "Payments", icon: Inbox },
           { href: "/admin/tickets", label: "Tickets", icon: Ticket },
           { href: "/admin/chat", label: "Chat", icon: MessageCircle },

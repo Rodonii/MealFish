@@ -4,10 +4,13 @@ import { api, resolveApiUrl } from "@shared/routes";
 import { parseWithLogging } from "@/lib/utils";
 
 // Minimal local user type based on schema expectations
+export type LocalUserRole = "user" | "admin";
+
 export interface LocalUser {
   id: number;
   username: string;
   points: number;
+  role?: LocalUserRole;
   isAdmin?: boolean;
 }
 
@@ -53,7 +56,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       
       const rawData = await res.json();
-      return rawData as LocalUser; 
+      const normalized = {
+        ...rawData,
+        role: rawData.role ?? (rawData.isAdmin ? "admin" : "user"),
+        isAdmin: rawData.role === "admin" || !!rawData.isAdmin,
+      } as LocalUser;
+      return normalized;
     },
     onSuccess: (data) => {
       setUser(data);
@@ -74,7 +82,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(err.message || "Failed to create account");
       }
       const rawData = await res.json();
-      return rawData as LocalUser;
+      const normalized = {
+        ...rawData,
+        role: rawData.role ?? (rawData.isAdmin ? "admin" : "user"),
+        isAdmin: rawData.role === "admin" || !!rawData.isAdmin,
+      } as LocalUser;
+      return normalized;
     },
     onSuccess: (data) => {
       setUser(data);

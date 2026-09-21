@@ -1,1 +1,2 @@
 - [Backend verification](backend-verification.md) — restart the single dev workflow after server-side edits; client HMR alone does not reload Express routes.
+- [External npm deployments](external-npm-deployments.md) — normalize Replit-internal lockfile tarball URLs before deploying outside Replit.

@@ -396,7 +396,7 @@ export default function ProductDetail() {
                   <ul className="space-y-2">
                     {ingredients.map((item: string, idx: number) => (
                       <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
-                        <span className="text-primary font-bold mt-1">•</span>
+                        <span className="text-primary font-bold mt-1"></span>
                         <span>{item}</span>
                       </li>
                     ))}
